@@ -1,0 +1,9 @@
+<RCC>
+    <qresource>
+        <file>icons/image.svg</file>
+        <file>icons/setting.svg</file>
+        <file>icons/render.svg</file>
+        <file>icons/mainlogo.svg</file>
+        <file>icons/extramap.svg</file>
+    </qresource>
+</RCC>
