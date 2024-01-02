@@ -53,6 +53,7 @@ fabric.properties
 *.war
 *.ear
 *.class
+*.lock
 
 Settings.ini
 *.exe

@@ -1,4 +1,5 @@
 import os
+import re
 from dataclasses import dataclass
 from multiprocessing.pool import ThreadPool
 
@@ -38,6 +39,56 @@ TianMapInfo = {
     "eva": "天地图-英文矢量注记",
     "eia": "天地图-英文影像注记"
 }
+
+metro_line_color_dict = {
+    '1': '#00B140',
+    '2': '#B94700',
+    '3': '#00A9E0',
+    '4': '#DA291C',
+    '5': '#A05EB5',
+    '6': '#00C7B1',
+    '7': '#0033A0',
+    '8': '#E45DBF',
+    '9': '#7B6469',
+    '10': '#F8779E',
+    '11': '#672146',
+    '12': '#A192B2',
+    '13': '#DE7C00',
+    '14': '#F2C75C',
+    '15': '#84BD00',
+    '16': '#1E22AA',
+    '17': '#017D83',
+    '18': '#1E90FF',
+    '19': '#439F6C',
+    '20': '#88DBDF',
+    '21': '#8F6740',
+    '22': '#1B9062',
+    '23': '#A9624A',
+    '24': '#F44F19',
+    '25': '#4A6AE0',
+    '26': '#C82C8A',
+    '27': '#3E8065',
+    '28': '#8777E7',
+    '29': '#A23049',
+    '30': '#CB9B47',
+    '31': '#CD7FF2',
+    '32': '#980CA0',
+    '34': '#168773'
+}
+
+poi_type_color_dict = {
+    '学校': '#42C5AD',
+    '医院': '#F47494',
+    '大型公服': '#ED7D31',
+    '商业服务': '#C00000'
+}
+
+class default_field:
+    name_metro_line_id = 'lineID'
+    name_metro_station_name = 'name'
+    name_poi_type = 'type'
+    name_poi = 'name'
+
 
 EXTRAMAPS_PATH = os.path.join(PluginDir, "extramaps.yml")
 with open(EXTRAMAPS_PATH, encoding="utf-8") as f:
@@ -194,3 +245,16 @@ def check_crs(iface):
     else:
         QgsMessageLog.logMessage("插件{}: 当前坐标系统{}, 不符合输入要求.".format(PLUGIN_NAME, crs.authid()), tag="Plugins", level=Qgis.MessageLevel.Warning)
         return False
+
+
+#  不考虑字段名的大小写敏感
+def get_field_index_no_case(layer, match_name):
+    field_names = layer.dataProvider().fields().names()
+
+    index = 0
+    for field_name in field_names:
+        ret = re.search(field_name, match_name, re.IGNORECASE)
+        if ret is not None:
+            return index, field_name
+        index += 1
+    return -1, match_name
