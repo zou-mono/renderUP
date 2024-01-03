@@ -1,3 +1,4 @@
+import base64
 import os
 import re
 from dataclasses import dataclass
@@ -18,6 +19,7 @@ HEADER = {
 }
 
 PluginDir = os.path.dirname(__file__)
+ExportDir = os.path.join(os.path.dirname(__file__), "res")
 
 # 图标
 iconlib = {
@@ -25,6 +27,7 @@ iconlib = {
     "image": QIcon(PluginDir + "/icons/image.svg"),
     "render": QIcon(PluginDir + "/icons/render.svg"),
     "logo": QIcon(PluginDir + "/icons/mainlogo.svg"),
+    'export': QIcon(PluginDir + "/icons/mainlogo.svg"),
     "tianditu": QIcon(PluginDir + "/icons/map_tianditu.svg"),
     "extra_map": QIcon(PluginDir + "/icons/extra_map.svg")
 }
@@ -88,6 +91,7 @@ class default_field:
     name_metro_station_name = 'name'
     name_poi_type = 'type'
     name_poi = 'name'
+    name_block = 'landid'
 
 
 EXTRAMAPS_PATH = os.path.join(PluginDir, "extramaps.yml")
@@ -107,7 +111,7 @@ class PluginConfig:
 
 def get_qset_name(key: str) -> str:
     section_tianditu = ["key", "random", "keyisvalid", "subdomain"]
-    section_other = ["extramap", "lastpath"]
+    section_other = ["extramap", "lastpath", "block_layer_id", "outpath"]
     if key in section_tianditu:
         return f"{PLUGIN_NAME}/tianditu/{key}"
     if key in section_other:
@@ -258,3 +262,24 @@ def get_field_index_no_case(layer, match_name):
             return index, field_name
         index += 1
     return -1, match_name
+
+
+def embedSymbol(symbol):
+    try:
+        layer_type = symbol.layerType()
+        if layer_type == 'SvgMarker':
+            svg_path = symbol.path()
+            if svg_path[:7] == 'base64:':
+                print('svg symbol already embedded')
+            else:
+                encoded_string = ""
+                with open(svg_path, "rb") as svg:
+                    encoded_string = base64.b64encode(svg.read())
+                    decoded_string = encoded_string.decode("utf-8")
+                    svg_content = 'base64:' + decoded_string
+                    symbol.setPath(svg_content)
+                    print('embedded svg symbol')
+        else:
+            print('not an svg symbol')
+    except Exception as err:
+        print(err)

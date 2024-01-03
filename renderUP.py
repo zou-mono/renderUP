@@ -29,6 +29,7 @@ from qgis.PyQt.QtWidgets import QAction
 from qgis._core import QgsProject, QgsMessageLog, Qgis, QgsSettings, QgsStyle
 from qgis._gui import QgsStyleManagerDialog
 
+from .core.export import bacth_export
 from .core.image import add_tianditu_basemap, add_extra_map, get_extra_map_icon
 from .ui.setting_dlg import SettingDialog
 from .utils import iconlib, TianMapInfo, extra_maps, get_qset_name, PLUGIN_NAME
@@ -84,6 +85,8 @@ class renderUP:
             self.qset.setValue(f"{PLUGIN_NAME}/tianditu/subdomain", "t0")
             self.qset.setValue(f"{PLUGIN_NAME}/extra/lastpath", os.path.expanduser("~"))
 
+        self.qset.value(get_qset_name("export"), None)
+        self.qset.value(get_qset_name("outpath"), None)
 
         self.menu = self.tr(u'&render urban planning')
 
@@ -233,6 +236,10 @@ class renderUP:
                                                 parent=self.iface.mainWindow())
         self.toolbar.addAction(self.actions["render"])
 
+        self.actions['export'] = self.add_action(iconlib['export'], text=self.tr(u'批量导出'), callback=self.run_export,
+                                                 parent=self.iface.mainWindow())
+        self.toolbar.addAction(self.actions["export"])
+
         self.actions['setting'] = self.add_action(iconlib['setting'], text=self.tr(u'设置'), callback=self.run_setting,
                                                  parent=self.iface.mainWindow())
         self.toolbar.addAction(self.actions["setting"])
@@ -270,20 +277,25 @@ class renderUP:
 
         # Create the dialog with elements (after translation) and keep reference
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
-        self.dlg = renderDialog(project=self.project)
+        self.dlg = renderDialog(iface=self.iface, parent=self.iface.mainWindow())
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
-        result = self.dlg.exec_()
+        # result = self.dlg.exec_()
         # See if OK was pressed
-        if result:
-            # Do something useful here - delete the line containing pass and
-            # substitute with your code.
-            pass
+        # if result:
+        #     # Do something useful here - delete the line containing pass and
+        #     # substitute with your code.
+        #     pass
 
     def run_setting(self):
         dlg = SettingDialog(project=self.project, extra_map_action=self.actions["extra_map"])
         # show the dialog
-        dlg.show()
+        # dlg.show()
         # Run the dialog event loop
-        result = dlg.exec_()
+        # result = dlg.exec_()
+        dlg.exec_()
+
+    def run_export(self):
+        be = bacth_export(self.iface)
+        be.run()

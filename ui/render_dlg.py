@@ -30,9 +30,11 @@ from qgis.PyQt import QtWidgets
 from qgis._core import QgsMessageLog, Qgis, QgsProject, QgsMapLayerType, QgsWkbTypes, QgsSymbol, QgsMarkerSymbol, \
     QgsLineSymbol, QgsFillSymbol, QgsRendererCategory, QgsCategorizedSymbolRenderer, QgsLineSymbolLayer, \
     QgsSimpleLineSymbolLayer, QgsSvgMarkerSymbolLayer, QgsSimpleMarkerSymbolLayer, QgsUnitTypes, QgsFillSymbolLayer, \
-    QgsSimpleFillSymbolLayer
+    QgsSimpleFillSymbolLayer, QgsSettings
+from qgis._gui import QgisInterface
 
-from ..utils import get_field_index_no_case, default_field, metro_line_color_dict, PluginDir, poi_type_color_dict
+from ..utils import get_field_index_no_case, default_field, metro_line_color_dict, PluginDir, poi_type_color_dict, \
+    get_qset_name
 
 log = logging.getLogger('QGIS')
 
@@ -42,7 +44,7 @@ FORM_CLASS, _ = uic.loadUiType(os.path.join(
 
 
 class renderDialog(QtWidgets.QDialog, FORM_CLASS):
-    def __init__(self, project, parent=None):
+    def __init__(self, iface: QgisInterface, parent=None):
         """Constructor."""
         super(renderDialog, self).__init__(parent)
         # Set up the user interface from Designer through FORM_CLASS.
@@ -51,7 +53,9 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
         # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html
         # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
-        self.project: QgsProject = project
+        self.iface = iface
+        self.project: QgsProject = QgsProject.instance()
+        self.qset = QgsSettings()
 
         # self.cmb_image_layer.view().pressed.connect(lambda: self.cmb_pressed('image'))
         # self.cmb_metro_network_layer.view().pressed.connect(lambda: self.cmb_pressed('network'))
@@ -62,6 +66,7 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
         self.cmb_metro_station_layer.installEventFilter(self)
         self.cmb_poi_layer.installEventFilter(self)
         self.cmb_block_layer.installEventFilter(self)
+        self.cmb_block_layer.currentIndexChanged.connect(self.block_layer_changed)
 
         self.btn_default.clicked.connect(self.btn_default_clicked)
 
@@ -162,8 +167,12 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
         # QgsMessageLog.logMessage("changed", tag="Plugins", level=Qgis.MessageLevel.Warning)
         self.init_cmb_layers(cname)
 
+    def block_layer_changed(self, index):
+        self.current_block_layer_id = self.cmb_block_layer.itemData(index)
+        self.qset.setValue(get_qset_name("block_layer_id"), self.current_block_layer_id)
+
     def btn_default_clicked(self):
-        layer_image_id = self.cmb_metro_network_layer.itemData(self.cmb_image_layer.currentIndex())
+        layer_image_id = self.cmb_image_layer.itemData(self.cmb_image_layer.currentIndex())
         layer_metro_network_id = self.cmb_metro_network_layer.itemData(self.cmb_metro_network_layer.currentIndex())
         layer_metro_station_id = self.cmb_metro_station_layer.itemData(self.cmb_metro_station_layer.currentIndex())
         layer_poi_id = self.cmb_poi_layer.itemData(self.cmb_poi_layer.currentIndex())
@@ -173,6 +182,14 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
         self.render_metro_station(layer_metro_station_id)
         self.render_poi(layer_poi_id)
         self.render_block(layer_block_id)
+        self.render_image(layer_image_id)
+
+    def render_image(self, layer_image_id):
+        if layer_image_id is not None:
+            layer = self.project.mapLayer(layer_image_id)
+            layer.renderer().setOpacity(0.5)
+            layer.triggerRepaint()
+            self.iface.layerTreeView().refreshLayerSymbology(layer.id())
 
     def render_block(self, layer_block_id):
         if layer_block_id is not None:
@@ -182,10 +199,11 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
                 'outline_color': "#C00000",
                 'color': "#FF0066",
                 'outline_width': "5",
-                'outline_width_unit': 'POINTS'
+                'outline_width_unit': 'Points'
             })
             layer.renderer().symbol().changeSymbolLayer(0, symbol)
             layer.triggerRepaint()
+            self.iface.layerTreeView().refreshLayerSymbology(layer.id())
 
     def render_poi(self, layer_poi_id):
         if layer_poi_id is not None:
@@ -210,15 +228,18 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
                     spec_dict[poi_type] = symbol_layer
 
             categrorized_renderer(layer, fni, poi_type_dict, field_name, spec_dict=spec_dict)
+            self.iface.layerTreeView().refreshLayerSymbology(layer.id())
 
     def render_metro_station(self, layer_metro_station_id):
         if layer_metro_station_id is not None:
             layer = self.project.mapLayer(layer_metro_station_id)
             symbol = QgsSvgMarkerSymbolLayer(os.path.join(PluginDir, "icons/metro_station.svg"))
-            symbol.setSize(15)
-            symbol.setSizeUnit(QgsUnitTypes.RenderUnit.RenderPoints)
-            layer.renderer().symbol().changeSymbolLayer(0, symbol)
+            if symbol is not None:
+                symbol.setSize(15)
+                symbol.setSizeUnit(QgsUnitTypes.RenderUnit.RenderPoints)
+                layer.renderer().symbol().changeSymbolLayer(0, symbol)
             layer.triggerRepaint()
+            self.iface.layerTreeView().refreshLayerSymbology(layer.id())
 
     def render_mertro_network(self, layer_metro_network_id):
         if layer_metro_network_id is not None:
@@ -232,12 +253,14 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
                 network_type[lineid] = f"{lineid}号线"
                 symbol_layer = QgsSimpleLineSymbolLayer.create({
                     'color': metro_line_color_dict[lineid],
-                    'line_width': '1.5'
+                    'line_width': '6',
+                    'line_width_unit': 'Points'
                     # 'outline_color': metro_line_color_dict[lineid],
                 })
                 spec_dict[lineid] = symbol_layer
 
             categrorized_renderer(layer, fni, network_type, field_name, spec_dict=spec_dict)
+            self.iface.layerTreeView().refreshLayerSymbology(layer.id())
 
 
 def validatedDefaultSymbol(geometryType):
