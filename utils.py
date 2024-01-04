@@ -115,6 +115,8 @@ class PluginConfig:
     out_height: int
     out_resolution: int
     out_format: str
+    draw_circle: bool
+    radius: float
 
 
 def epsg_code(crs):
@@ -124,7 +126,7 @@ def epsg_code(crs):
 def get_qset_name(key: str) -> str:
     section_tianditu = ["key", "random", "keyisvalid", "subdomain"]
     section_other = ["extramap", "lastpath", "block_layer_id", "outpath",
-                     "out_width", "out_height", "out_resolution", "out_format", "draw_circle"]
+                     "out_width", "out_height", "out_resolution", "out_format", "draw_circle", "radius"]
     if key in section_tianditu:
         return f"{PLUGIN_NAME}/tianditu/{key}"
     if key in section_other:

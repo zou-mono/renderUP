@@ -95,7 +95,10 @@ class renderUP:
             self.qset.setValue(f"{PLUGIN_NAME}/extra/out_resolution", 300)
         if not self.qset.contains(f"{PLUGIN_NAME}/extra/out_format"):
             self.qset.setValue(f"{PLUGIN_NAME}/extra/out_format", 'png')
-
+        if not self.qset.contains(f"{PLUGIN_NAME}/extra/draw_circle"):
+            self.qset.setValue(f"{PLUGIN_NAME}/extra/draw_circle", False)
+        if not self.qset.contains(f"{PLUGIN_NAME}/extra/radius"):
+            self.qset.setValue(f"{PLUGIN_NAME}/extra/radius", 1000)
 
         self.qset.value(get_qset_name("export"), None)
         self.qset.value(get_qset_name("outpath"), None)

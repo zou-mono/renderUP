@@ -24,7 +24,8 @@
 import logging
 import os
 
-from PyQt5.QtCore import QEvent, QSize
+from PyQt5.QtCore import QEvent, QSize, QRegularExpression
+from PyQt5.QtGui import QRegularExpressionValidator
 from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
 from qgis._core import QgsMessageLog, Qgis, QgsProject, QgsMapLayerType, QgsWkbTypes, QgsSymbol, QgsMarkerSymbol, \
@@ -59,10 +60,15 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
         self.project: QgsProject = QgsProject.instance()
         self.qset = QgsSettings()
 
-        # self.cmb_image_layer.view().pressed.connect(lambda: self.cmb_pressed('image'))
-        # self.cmb_metro_network_layer.view().pressed.connect(lambda: self.cmb_pressed('network'))
-        # self.cmb_metro_station_layer.view().pressed.connect(lambda: self.cmb_pressed('point'))
-        # self.cmb_poi_layer.view().pressed.connect(lambda: self.cmb_pressed('point'))
+        self.lbl_radius.setVisible(False)
+        self.txt_radius.setVisible(False)
+        self.ckb_draw_circle.setCheckState(False)
+
+        reg = QRegularExpression(r"^(0*[1-9][0-9]*(\.[0-9]+)?|0+\.[0-9]*[1-9][0-9]*)$")
+        doubleValidator = QRegularExpressionValidator()
+        doubleValidator.setRegularExpression(reg)
+        self.txt_radius.setValidator(doubleValidator)
+
         self.cmb_image_layer.installEventFilter(self)
         self.cmb_metro_network_layer.installEventFilter(self)
         self.cmb_metro_station_layer.installEventFilter(self)
@@ -72,6 +78,7 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
 
         self.ckb_draw_circle.stateChanged.connect(self.enable_draw_circle)
         self.btn_default.clicked.connect(self.btn_default_clicked)
+        self.txt_radius.textChanged.connect(self.on_txt_radius_changed)
 
     def show(self) -> None:
         self.init_cmb_layers()
@@ -276,6 +283,11 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
             self.qset.setValue(f"{PLUGIN_NAME}/extra/draw_circle", False)
             self.lbl_radius.setVisible(False)
             self.txt_radius.setVisible(False)
+
+    def on_txt_radius_changed(self):
+        if self.txt_radius.text() == "":
+            return
+        self.qset.setValue(f"{PLUGIN_NAME}/extra/radius", float(self.txt_radius.text()))
 
 
 def validatedDefaultSymbol(geometryType):

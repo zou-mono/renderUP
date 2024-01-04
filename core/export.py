@@ -10,7 +10,7 @@ from qgis._core import QgsMapSettings, QgsSettings, QgsProject, QgsMessageLog, Q
     QgsCoordinateReferenceSystem, QgsCoordinateTransform
 from qgis._gui import QgisInterface
 
-from ..utils import get_qset_name, get_field_index_no_case, default_field, ExportDir, epsg_code
+from ..utils import get_qset_name, get_field_index_no_case, default_field, ExportDir, epsg_code, PluginConfig
 
 
 class bacth_export:
@@ -20,6 +20,15 @@ class bacth_export:
         self.project = QgsProject.instance()
 
     def run(self):
+        self.config = PluginConfig(
+            out_width=self.qset.value(get_qset_name("out_width"), type=int),
+            out_height=self.qset.value(get_qset_name("out_height"), type=int),
+            out_resolution=self.qset.value(get_qset_name("out_resolution"), type=int),
+            out_format=self.qset.value(get_qset_name("out_format")),
+            draw_circle=self.qset.value(get_qset_name("draw_circle"), type=bool),
+            radius=self.qset.value(get_qset_name("radius"), type=float),
+        )
+
         block_layer_id = self.qset.value(get_qset_name("block_layer_id"))
         if block_layer_id is None:
             return
@@ -35,11 +44,14 @@ class bacth_export:
         if not os.path.exists(ExportDir):
             os.mkdir(ExportDir)
 
-        page_width = int(self.qset.value(get_qset_name("out_width")))
-        page_height = int(self.qset.value(get_qset_name("out_height")))
-        page_resolution = int(self.qset.value(get_qset_name("out_resolution")))
+        out_width = self.config.out_width
+        out_height = self.config.out_height
+        out_resolution = self.config.out_resolution
+        out_format = self.config.out_format
+        draw_circle = self.config.draw_circle
+        radius = self.config.radius
 
-        QgsMessageLog.logMessage(f"图片格式: {page_width} * {page_height} * {page_resolution}", tag="Plugins", level=Qgis.MessageLevel.Warning)
+        QgsMessageLog.logMessage(f"图片格式: {out_width} * {out_height} * {out_resolution}", tag="Plugins", level=Qgis.MessageLevel.Warning)
 
         layoutName = "renderUP_atlas"
         manager = self.project.layoutManager()
@@ -53,22 +65,22 @@ class bacth_export:
         layout.setName(layoutName)
         self.project.layoutManager().addLayout(layout)
         pc = layout.pageCollection()
-        pc.pages()[0].setPageSize(QgsLayoutSize(page_width, page_height, QgsUnitTypes.LayoutUnit.LayoutPixels))
+        pc.pages()[0].setPageSize(QgsLayoutSize(out_width, out_height, QgsUnitTypes.LayoutUnit.LayoutPixels))
 
         # layout: QgsPrintLayout = manager.layoutByName(layoutName)
 
         map_item = QgsLayoutItemMap(layout)
         map_item.setAtlasDriven(True)
         map_item.setAtlasScalingMode(QgsLayoutItemMap.AtlasScalingMode.Predefined)
-        map_item.mapSettings(self.iface.mapCanvas().extent(), QSizeF(page_width, page_height), dpi=page_resolution, includeLayerSettings=True)
+        map_item.mapSettings(self.iface.mapCanvas().extent(), QSizeF(out_width, out_height), dpi=out_resolution, includeLayerSettings=True)
         # map.setAtlasMargin(0.05)
-        map_item.setRect(0, 0, page_width, page_height)
+        map_item.setRect(0, 0, out_width, out_height)
         # map.zoomToExtent(self.iface.mapCanvas().extent())
         map_item.setBackgroundColor(QColor(255, 255, 255, 0))
         layout.addLayoutItem(map_item)
 
         map_item.attemptMove(QgsLayoutPoint(0, 0, QgsUnitTypes.LayoutUnit.LayoutPixels))
-        map_item.attemptResize(QgsLayoutSize(page_width, page_height, QgsUnitTypes.LayoutUnit.LayoutPixels))
+        map_item.attemptResize(QgsLayoutSize(out_width, out_height, QgsUnitTypes.LayoutUnit.LayoutPixels))
 
         p_atlas = layout.atlas()
         p_atlas.setCoverageLayer(block_layer)
