@@ -99,6 +99,10 @@ with open(EXTRAMAPS_PATH, encoding="utf-8") as f:
     extra_maps = yaml.load(f, Loader=yaml.FullLoader)
 
 
+class single_window:
+    m_frmRender = None  # 器窗口只能打开一个
+    m_frmSetting = None
+
 @dataclass
 class PluginConfig:
     key: str

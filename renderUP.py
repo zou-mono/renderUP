@@ -32,7 +32,7 @@ from qgis._gui import QgsStyleManagerDialog
 from .core.export import bacth_export
 from .core.image import add_tianditu_basemap, add_extra_map, get_extra_map_icon
 from .ui.setting_dlg import SettingDialog
-from .utils import iconlib, TianMapInfo, extra_maps, get_qset_name, PLUGIN_NAME
+from .utils import iconlib, TianMapInfo, extra_maps, get_qset_name, PLUGIN_NAME, single_window
 # Import the code for the dialog
 from .ui.render_dlg import renderDialog
 import os.path
@@ -290,9 +290,13 @@ class renderUP:
 
         # Create the dialog with elements (after translation) and keep reference
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
-        self.dlg = renderDialog(iface=self.iface, parent=self.iface.mainWindow())
-        # show the dialog
-        self.dlg.show()
+        if single_window.m_frmRender is None:
+            frm = renderDialog(iface=self.iface, parent=self.iface.mainWindow())
+            single_window.m_frmRender = frm
+        else:
+            frm = single_window.m_frmRender
+
+        frm.show()
         # Run the dialog event loop
         # result = self.dlg.exec_()
         # See if OK was pressed
@@ -302,12 +306,13 @@ class renderUP:
         #     pass
 
     def run_setting(self):
-        dlg = SettingDialog(project=self.project, extra_map_action=self.actions["extra_map"])
-        # show the dialog
-        # dlg.show()
-        # Run the dialog event loop
-        # result = dlg.exec_()
-        dlg.exec_()
+        if single_window.m_frmSetting is None:
+            frm = SettingDialog(project=self.project, extra_map_action=self.actions["extra_map"])
+            single_window.m_frmSetting = frm
+        else:
+            frm = single_window.m_frmSetting
+
+        frm.exec_()
 
     def run_export(self):
         be = bacth_export(self.iface)
