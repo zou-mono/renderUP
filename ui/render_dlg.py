@@ -34,7 +34,7 @@ from qgis._core import QgsMessageLog, Qgis, QgsProject, QgsMapLayerType, QgsWkbT
 from qgis._gui import QgisInterface
 
 from ..utils import get_field_index_no_case, default_field, metro_line_color_dict, PluginDir, poi_type_color_dict, \
-    get_qset_name
+    get_qset_name, PLUGIN_NAME
 
 log = logging.getLogger('QGIS')
 
@@ -70,9 +70,12 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
         self.cmb_block_layer.installEventFilter(self)
         self.cmb_block_layer.currentIndexChanged.connect(self.block_layer_changed)
 
+        self.ckb_draw_circle.stateChanged.connect(self.enable_draw_circle)
         self.btn_default.clicked.connect(self.btn_default_clicked)
 
+    def show(self) -> None:
         self.init_cmb_layers()
+        super(renderDialog, self).show()
 
     def eventFilter(self,target,event):
         if event.type() == QEvent.MouseButtonPress:
@@ -263,6 +266,16 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
 
             categrorized_renderer(layer, fni, network_type, field_name, spec_dict=spec_dict)
             self.iface.layerTreeView().refreshLayerSymbology(layer.id())
+
+    def enable_draw_circle(self):
+        if self.ckb_draw_circle.isChecked():
+            self.qset.setValue(f"{PLUGIN_NAME}/extra/draw_circle", True)
+            self.lbl_radius.setVisible(True)
+            self.txt_radius.setVisible(True)
+        else:
+            self.qset.setValue(f"{PLUGIN_NAME}/extra/draw_circle", False)
+            self.lbl_radius.setVisible(False)
+            self.txt_radius.setVisible(False)
 
 
 def validatedDefaultSymbol(geometryType):

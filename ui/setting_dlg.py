@@ -105,6 +105,14 @@ class SettingDialog(QtWidgets.QDialog, FORM_CLASS):
 
         self.btn_select_file.clicked.connect(self.btn_selectfile_clicked)
 
+    def closeEvent(self, event):
+        self.qset.setValue(f"{PLUGIN_NAME}/extra/out_width", int(self.txt_width.text()))
+        self.qset.setValue(f"{PLUGIN_NAME}/extra/out_height", int(self.txt_height.text()))
+        self.qset.setValue(f"{PLUGIN_NAME}/extra/out_resolution", int(self.txt_resolution.text()))
+        self.qset.setValue(f"{PLUGIN_NAME}/extra/out_format", self.cmb_format.currentText())
+
+        super(SettingDialog, self).close()
+
     #  选择输出目录
     def btn_selectfile_clicked(self):
         last_path = self.qset.value(get_qset_name("lastpath"))

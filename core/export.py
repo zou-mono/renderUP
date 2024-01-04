@@ -1,15 +1,16 @@
 import os.path
 import time
 
-from PyQt5.QtCore import QTimer, QSize
+from PyQt5.QtCore import QTimer, QSize, QSizeF
 from PyQt5.QtGui import QPainter, QImage, QColor
 from PyQt5.QtWidgets import QMessageBox
 from qgis._core import QgsMapSettings, QgsSettings, QgsProject, QgsMessageLog, Qgis, QgsMapLayerType, \
     QgsMapRendererCustomPainterJob, QgsMapRendererParallelJob, QgsMapRendererSequentialJob, QgsPrintLayout, \
-    QgsLayoutItemMap, QgsLayoutPoint, QgsUnitTypes, QgsLayoutSize, QgsLayoutExporter, QgsRectangle, QgsLayoutItemPage
+    QgsLayoutItemMap, QgsLayoutPoint, QgsUnitTypes, QgsLayoutSize, QgsLayoutExporter, QgsRectangle, QgsLayoutItemPage, \
+    QgsCoordinateReferenceSystem, QgsCoordinateTransform
 from qgis._gui import QgisInterface
 
-from ..utils import get_qset_name, get_field_index_no_case, default_field, ExportDir
+from ..utils import get_qset_name, get_field_index_no_case, default_field, ExportDir, epsg_code
 
 
 class bacth_export:
@@ -28,15 +29,17 @@ class bacth_export:
         if block_layer.type() != QgsMapLayerType.VectorLayer:
             return
 
-        # QMessageBox.warning(None, '警告', '为了配合影像底图使用，请将当前坐标系统调整为web墨卡托投影(EPSG:3857)或者国家大地2000投影(EPSG:4547)',
-        #                     QMessageBox.Ok)
-
-        ms = self.iface.mapCanvas().mapSettings()
-
-        fni, field_name = get_field_index_no_case(block_layer, default_field.name_block)
+        # ms = self.iface.mapCanvas().mapSettings()
+        # fni, field_name = get_field_index_no_case(block_layer, default_field.name_block)
 
         if not os.path.exists(ExportDir):
             os.mkdir(ExportDir)
+
+        page_width = int(self.qset.value(get_qset_name("out_width")))
+        page_height = int(self.qset.value(get_qset_name("out_height")))
+        page_resolution = int(self.qset.value(get_qset_name("out_resolution")))
+
+        QgsMessageLog.logMessage(f"图片格式: {page_width} * {page_height} * {page_resolution}", tag="Plugins", level=Qgis.MessageLevel.Warning)
 
         layoutName = "renderUP_atlas"
         manager = self.project.layoutManager()
@@ -50,21 +53,22 @@ class bacth_export:
         layout.setName(layoutName)
         self.project.layoutManager().addLayout(layout)
         pc = layout.pageCollection()
-        pc.pages()[0].setPageSize(QgsLayoutSize(2000, 2000, QgsUnitTypes.LayoutUnit.LayoutPixels))
+        pc.pages()[0].setPageSize(QgsLayoutSize(page_width, page_height, QgsUnitTypes.LayoutUnit.LayoutPixels))
 
         # layout: QgsPrintLayout = manager.layoutByName(layoutName)
 
-        map = QgsLayoutItemMap(layout)
-        map.setAtlasDriven(True)
-        map.setAtlasScalingMode(QgsLayoutItemMap.AtlasScalingMode.Predefined)
+        map_item = QgsLayoutItemMap(layout)
+        map_item.setAtlasDriven(True)
+        map_item.setAtlasScalingMode(QgsLayoutItemMap.AtlasScalingMode.Predefined)
+        map_item.mapSettings(self.iface.mapCanvas().extent(), QSizeF(page_width, page_height), dpi=page_resolution, includeLayerSettings=True)
         # map.setAtlasMargin(0.05)
-        map.setRect(0, 0, 2000, 2000)
-        map.zoomToExtent(self.iface.mapCanvas().extent())
-        map.setBackgroundColor(QColor(255, 255, 255, 0))
-        layout.addLayoutItem(map)
+        map_item.setRect(0, 0, page_width, page_height)
+        # map.zoomToExtent(self.iface.mapCanvas().extent())
+        map_item.setBackgroundColor(QColor(255, 255, 255, 0))
+        layout.addLayoutItem(map_item)
 
-        map.attemptMove(QgsLayoutPoint(0, 0, QgsUnitTypes.LayoutUnit.LayoutPixels))
-        map.attemptResize(QgsLayoutSize(2000, 2000, QgsUnitTypes.LayoutUnit.LayoutPixels))
+        map_item.attemptMove(QgsLayoutPoint(0, 0, QgsUnitTypes.LayoutUnit.LayoutPixels))
+        map_item.attemptResize(QgsLayoutSize(page_width, page_height, QgsUnitTypes.LayoutUnit.LayoutPixels))
 
         p_atlas = layout.atlas()
         p_atlas.setCoverageLayer(block_layer)
@@ -75,14 +79,22 @@ class bacth_export:
         for i in range(0, p_atlas.count()):
             # Creata a exporter Layout for each layout generate with Atlas
             feature = block_layer.getFeature(i)
-            extent = feature.geometry().boundingBox()
+            geom = feature.geometry()
+
+            sourceCrs = QgsCoordinateReferenceSystem(epsg_code(block_layer.crs()))
+            destCrs = QgsCoordinateReferenceSystem(epsg_code(self.project.crs()))
+            tr = QgsCoordinateTransform(sourceCrs, destCrs, self.project)
+
+            geom.transform(tr)
+
+            extent = geom.boundingBox()
             extent.scale(1.5)
 
             centroid = feature.geometry().pointOnSurface()
 
+            map_item.zoomToExtent(extent)
+            QgsMessageLog.logMessage(str(extent.asWktPolygon()), tag="Plugins", level=Qgis.MessageLevel.Warning)
 
-
-            map.zoomToExtent(extent)
             exporter = QgsLayoutExporter(p_atlas.layout())
 
             QgsMessageLog.logMessage(f"保存文件: {i} of {p_atlas.count()}", tag="Plugins", level=Qgis.MessageLevel.Warning)
