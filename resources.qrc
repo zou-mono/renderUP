@@ -4,6 +4,10 @@
         <file>icons/setting.svg</file>
         <file>icons/render.svg</file>
         <file>icons/mainlogo.svg</file>
-        <file>icons/extramap.svg</file>
+        <file>icons/extra_map.svg</file>
+        <file>icons/map_tianditu.svg</file>
+        <file>icons/metro_station.svg</file>
+        <file>icons/select_file.png</file>
+        <file>icons/tianditu.png</file>
     </qresource>
 </RCC>

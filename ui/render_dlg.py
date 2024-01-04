@@ -24,7 +24,7 @@
 import logging
 import os
 
-from PyQt5.QtCore import QEvent
+from PyQt5.QtCore import QEvent, QSize
 from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
 from qgis._core import QgsMessageLog, Qgis, QgsProject, QgsMapLayerType, QgsWkbTypes, QgsSymbol, QgsMarkerSymbol, \
@@ -53,6 +53,8 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
         # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html
         # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
+        self.setFixedSize(QSize(480, 300))
+
         self.iface = iface
         self.project: QgsProject = QgsProject.instance()
         self.qset = QgsSettings()
@@ -199,7 +201,7 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
                 'outline_color': "#C00000",
                 'color': "#FF0066",
                 'outline_width': "5",
-                'outline_width_unit': 'Points'
+                'outline_width_unit': 'Pixel'
             })
             layer.renderer().symbol().changeSymbolLayer(0, symbol)
             layer.triggerRepaint()

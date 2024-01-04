@@ -107,11 +107,16 @@ class PluginConfig:
     subdomain: str
     extramap_enabled: bool
     lastpath: str
+    out_width: int
+    out_height: int
+    out_resolution: int
+    out_format: str
 
 
 def get_qset_name(key: str) -> str:
     section_tianditu = ["key", "random", "keyisvalid", "subdomain"]
-    section_other = ["extramap", "lastpath", "block_layer_id", "outpath"]
+    section_other = ["extramap", "lastpath", "block_layer_id", "outpath",
+                     "out_width", "out_height", "out_resolution", "out_format"]
     if key in section_tianditu:
         return f"{PLUGIN_NAME}/tianditu/{key}"
     if key in section_other:

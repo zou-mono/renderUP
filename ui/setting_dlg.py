@@ -24,7 +24,8 @@
 import logging
 import os
 
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtCore import QThread, pyqtSignal, QSize, QRegularExpression
+from PyQt5.QtGui import QIntValidator, QRegularExpressionValidator
 from PyQt5.QtWidgets import QFileDialog
 from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
@@ -50,6 +51,7 @@ class SettingDialog(QtWidgets.QDialog, FORM_CLASS):
         # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html
         # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
+        self.setFixedSize(QSize(480, 300))
 
         self.project: QgsProject = project
 
@@ -65,7 +67,11 @@ class SettingDialog(QtWidgets.QDialog, FORM_CLASS):
             keyisvalid=self.qset.value(get_qset_name("keyisvalid"), type=bool),
             subdomain=self.qset.value(get_qset_name("subdomain")),
             extramap_enabled=True,
-            lastpath=self.qset.value(get_qset_name("lastpath"))
+            lastpath=self.qset.value(get_qset_name("lastpath")),
+            out_width=self.qset.value(get_qset_name("out_width")),
+            out_height=self.qset.value(get_qset_name("out_height")),
+            out_resolution=self.qset.value(get_qset_name("out_resolution")),
+            out_format=self.qset.value(get_qset_name("out_format"))
         )
 
         self.mLineEdit_key.setText(self.config.key)
@@ -76,6 +82,20 @@ class SettingDialog(QtWidgets.QDialog, FORM_CLASS):
             self.label_keystatus.setText("正常")
         else:
             self.label_keystatus.setText("无效")
+
+        reg = QRegularExpression(r"^[1-9][0-9]*$")
+        int_validator = QRegularExpressionValidator()
+        int_validator.setRegularExpression(reg)
+        self.txt_width.setValidator(int_validator)
+        self.txt_height.setValidator(int_validator)
+        self.txt_resolution.setValidator(int_validator)
+
+        self.txt_width.setText(str(self.config.out_width))
+        self.txt_height.setText(str(self.config.out_height))
+        self.txt_resolution.setText(str(self.config.out_resolution))
+
+        self.cmb_format.addItems(['png', 'jpg', 'pdf', 'bmp', 'tif', 'pdf'])
+        self.cmb_format.setCurrentText('png')
 
         self.pushButton.clicked.connect(self.check)
 

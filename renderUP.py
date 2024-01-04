@@ -36,7 +36,7 @@ from .utils import iconlib, TianMapInfo, extra_maps, get_qset_name, PLUGIN_NAME
 # Import the code for the dialog
 from .ui.render_dlg import renderDialog
 import os.path
-# from .resources_rc import *
+from .resources_rc import *
 
 # import pydevd_pycharm
 # pydevd_pycharm.settrace('localhost', port=53100, stdoutToServer=True, stderrToServer=True)
@@ -83,9 +83,22 @@ class renderUP:
             self.qset.setValue(f"{PLUGIN_NAME}/tianditu/keyisvalid", False)
             self.qset.setValue(f"{PLUGIN_NAME}/tianditu/random", True)
             self.qset.setValue(f"{PLUGIN_NAME}/tianditu/subdomain", "t0")
+
+        if not self.qset.contains(f"{PLUGIN_NAME}/extra/lastpath"):
             self.qset.setValue(f"{PLUGIN_NAME}/extra/lastpath", os.path.expanduser("~"))
 
+        if not self.qset.contains(f"{PLUGIN_NAME}/extra/out_width"):
+            self.qset.setValue(f"{PLUGIN_NAME}/extra/out_width", 1920)
+        if not self.qset.contains(f"{PLUGIN_NAME}/extra/out_height"):
+            self.qset.setValue(f"{PLUGIN_NAME}/extra/out_height", 1080)
+        if not self.qset.contains(f"{PLUGIN_NAME}/extra/out_resolution"):
+            self.qset.setValue(f"{PLUGIN_NAME}/extra/out_resolution", 300)
+        if not self.qset.contains(f"{PLUGIN_NAME}/extra/out_format"):
+            self.qset.setValue(f"{PLUGIN_NAME}/extra/out_format", 'png')
+
+
         self.qset.value(get_qset_name("export"), None)
+        self.qset.value(get_qset_name("outpath"), None)
         self.qset.value(get_qset_name("outpath"), None)
 
         self.menu = self.tr(u'&render urban planning')
