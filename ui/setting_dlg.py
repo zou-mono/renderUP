@@ -68,9 +68,9 @@ class SettingDialog(QtWidgets.QDialog, FORM_CLASS):
             subdomain=self.qset.value(get_qset_name("subdomain")),
             extramap_enabled=True,
             lastpath=self.qset.value(get_qset_name("lastpath")),
-            out_width=self.qset.value(get_qset_name("out_width")),
-            out_height=self.qset.value(get_qset_name("out_height")),
-            out_resolution=self.qset.value(get_qset_name("out_resolution")),
+            out_width=self.qset.value(get_qset_name("out_width"), type=int),
+            out_height=self.qset.value(get_qset_name("out_height"), type=int),
+            out_resolution=self.qset.value(get_qset_name("out_resolution"), type=int),
             out_format=self.qset.value(get_qset_name("out_format"))
         )
 

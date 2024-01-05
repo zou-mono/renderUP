@@ -220,7 +220,7 @@ class renderUP:
             menu.addAction(
                 iconlib["tianditu"],
                 map_name,
-                lambda maptype_=map_type: add_tianditu_basemap(maptype_, self.iface, self.toolbar),
+                lambda maptype_=map_type: add_tianditu_basemap(maptype_, self.project, self.toolbar),
             )
 
         menu.addSeparator()
@@ -273,13 +273,13 @@ class renderUP:
             #     action)
             self.iface.removeToolBarIcon(action)
 
-    def run_image(self):
-        proj_id = self.project.crs().authid()
-        QgsMessageLog.logMessage("当前坐标系统:{}, 符合输入要求.".format(proj_id), level=Qgis.MessageLevel.Info)
-        if proj_id != "EPSG:3857" and proj_id != "ESPG:4547":
-            QMessageBox.warning(None, '警告', '为了配合影像底图使用，请将当前坐标系统调整为web墨卡托投影(EPSG:3857)或者国家大地2000投影(EPSG:4547)',
-                                QMessageBox.Ok)
-            return
+    # def run_image(self):
+    #     proj_id = self.project.crs().authid()
+    #     QgsMessageLog.logMessage("当前坐标系统:{}, 符合输入要求.".format(proj_id), level=Qgis.MessageLevel.Info)
+    #     if proj_id != "EPSG:3857" and proj_id != "ESPG:4547":
+    #         QMessageBox.warning(None, '警告', '为了配合影像底图使用，请将当前坐标系统调整为web墨卡托投影(EPSG:3857)或者国家大地2000投影(EPSG:4547)',
+    #                             QMessageBox.Ok)
+    #         return
 
     def run_render(self):
         """Run method that performs all the real work"""

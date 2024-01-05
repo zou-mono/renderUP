@@ -2,7 +2,7 @@ import random
 import requests
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QMessageBox
-from qgis._core import QgsRasterLayer, QgsProject, QgsSettings
+from qgis._core import QgsRasterLayer, QgsProject, QgsSettings, QgsMessageLog, Qgis
 
 from ..utils import PluginDir, tianditu_map_url, TIANDITU_HOME_URL, TianMapInfo, PLUGIN_NAME, current_qgis_version, \
     check_crs
@@ -74,11 +74,14 @@ def get_map_uri(url: str, zmin: int = 0, zmax: int = 18, referer: str = "") -> s
     return uri
 
 
-def add_tianditu_basemap(maptype, iface, parent=None):
-    if not check_crs(iface):
+def add_tianditu_basemap(maptype, project, parent=None):
+    crs = project.crs()
+    if not check_crs(crs):
         QMessageBox.warning(None, '警告', '为了使用影像底图，请将当前坐标系统调整为web墨卡托投影(EPSG:3857)、'
                                         '国家大地2000投影(EPSG:4547)、国家大地2000经纬度(EPSG:4490)或者WGS84经纬度(EPSG:4326)',
                             QMessageBox.Ok)
+    else:
+        QgsMessageLog.logMessage("插件{}: 当前坐标系统{}, 符合输入要求.".format(PLUGIN_NAME, crs.authid()), tag="Plugins", level=Qgis.MessageLevel.Info)
 
     qset = QgsSettings()
     key = qset.value(f"{PLUGIN_NAME}/tianditu/key")

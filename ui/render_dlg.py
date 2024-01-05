@@ -26,6 +26,7 @@ import os
 
 from PyQt5.QtCore import QEvent, QSize, QRegularExpression
 from PyQt5.QtGui import QRegularExpressionValidator
+from PyQt5.QtWidgets import QMessageBox
 from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
 from qgis._core import QgsMessageLog, Qgis, QgsProject, QgsMapLayerType, QgsWkbTypes, QgsSymbol, QgsMarkerSymbol, \
@@ -35,7 +36,7 @@ from qgis._core import QgsMessageLog, Qgis, QgsProject, QgsMapLayerType, QgsWkbT
 from qgis._gui import QgisInterface
 
 from ..utils import get_field_index_no_case, default_field, metro_line_color_dict, PluginDir, poi_type_color_dict, \
-    get_qset_name, PLUGIN_NAME
+    get_qset_name, PLUGIN_NAME, check_crs
 
 log = logging.getLogger('QGIS')
 
@@ -181,6 +182,14 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
 
     def block_layer_changed(self, index):
         self.current_block_layer_id = self.cmb_block_layer.itemData(index)
+        layer = self.project.mapLayer(self.current_block_layer_id)
+        if layer is None:
+            return
+
+        if not check_crs(layer.crs()):
+            QMessageBox.warning(self, '警告', '请为地块图层设置有效的坐标系统(web墨卡托投影(EPSG:3857)、'
+                                            '国家大地2000投影(EPSG:4547)、国家大地2000经纬度(EPSG:4490)或者WGS84经纬度(EPSG:4326))',
+                                QMessageBox.Ok)
         self.qset.setValue(get_qset_name("block_layer_id"), self.current_block_layer_id)
 
     def btn_default_clicked(self):
@@ -258,6 +267,10 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
             layer = self.project.mapLayer(layer_metro_network_id)
             fni, field_name = get_field_index_no_case(layer, default_field.name_metro_line_id)
 
+            if fni < 0:
+                QgsMessageLog.logMessage(f"插件{PLUGIN_NAME}:轨道线路编号字段lineID不存在,无法自动配色.", tag="Plugins", level=Qgis.MessageLevel.Warning)
+                return
+
             network_type = {}
             spec_dict = {}
             for fea in layer.getFeatures():
@@ -279,6 +292,7 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
             self.qset.setValue(f"{PLUGIN_NAME}/extra/draw_circle", True)
             self.lbl_radius.setVisible(True)
             self.txt_radius.setVisible(True)
+            self.txt_radius.setText(str(self.qset.value(get_qset_name("radius"))))
         else:
             self.qset.setValue(f"{PLUGIN_NAME}/extra/draw_circle", False)
             self.lbl_radius.setVisible(False)

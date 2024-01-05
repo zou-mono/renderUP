@@ -107,20 +107,23 @@ class single_window:
 class PluginConfig:
     key: str
     keyisvalid: bool
-    random_enabled: bool
-    subdomain: str
-    extramap_enabled: bool
-    lastpath: str
-    out_width: int
-    out_height: int
-    out_resolution: int
-    out_format: str
-    draw_circle: bool
-    radius: float
+    random_enabled: bool = True
+    subdomain: str = "0"
+    extramap_enabled: bool = True
+    lastpath: str = ""
+    out_width: int = 1920
+    out_height: int = 1080
+    out_resolution: int = 300
+    out_format: str = "png"
+    draw_circle: bool = False
+    radius: float = 0.0
 
 
-def epsg_code(crs):
-    return int(crs.authid()[5:])
+def epsg_code(crs: QgsCoordinateReferenceSystem):
+    if not crs.isValid():
+        return -1
+    else:
+        return int(crs.authid()[5:])
 
 
 def get_qset_name(key: str) -> str:
@@ -252,17 +255,19 @@ def find_nearest_number_index(numbers_list, target):
     return nearest_index
 
 
-def check_crs(iface):
-    crs = iface.mapCanvas().mapSettings().destinationCrs()
+def check_crs(crs: QgsCoordinateReferenceSystem):
+    # crs = iface.mapCanvas().mapSettings().destinationCrs()
+    if not crs.isValid():
+        return False
 
     if crs == QgsCoordinateReferenceSystem("EPSG:3857") or crs == QgsCoordinateReferenceSystem("EPSG:4547") or \
         crs == QgsCoordinateReferenceSystem("EPSG:4490") or crs == QgsCoordinateReferenceSystem("EPSG:4326"):
 
-        QgsMessageLog.logMessage("插件{}: 当前坐标系统{}, 符合输入要求.".format(PLUGIN_NAME, crs.authid()), tag="Plugins", level=Qgis.MessageLevel.Info)
+        # QgsMessageLog.logMessage("插件{}: 当前坐标系统{}, 符合输入要求.".format(PLUGIN_NAME, crs.authid()), tag="Plugins", level=Qgis.MessageLevel.Info)
 
         return True
     else:
-        QgsMessageLog.logMessage("插件{}: 当前坐标系统{}, 不符合输入要求.".format(PLUGIN_NAME, crs.authid()), tag="Plugins", level=Qgis.MessageLevel.Warning)
+        # QgsMessageLog.logMessage("插件{}: 当前坐标系统{}, 不符合输入要求.".format(PLUGIN_NAME, crs.authid()), tag="Plugins", level=Qgis.MessageLevel.Warning)
         return False
 
 
