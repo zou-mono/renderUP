@@ -127,10 +127,11 @@ class bacth_export:
 
             extent = QgsRectangle.fromCenterAndSize(centroid, 2 * radius, 2 * radius)
             # extent = geom.boundingBox()
-            extent.scale(1.5)
+            # extent.scale(0.8)
             map_item.zoomToExtent(extent)
+            # map_item.setExtent(extent)
 
-            # QgsMessageLog.logMessage(str(extent.asWktPolygon()), tag="Plugins", level=Qgis.MessageLevel.Warning)
+            QgsMessageLog.logMessage(str(extent.asWktPolygon()), tag="Plugins", level=Qgis.MessageLevel.Warning)
 
             ele_circle = QgsLayoutItemShape(layout)
             ele_circle.setShapeType(QgsLayoutItemShape.Shape.Ellipse)
@@ -142,9 +143,6 @@ class bacth_export:
             # QgsMessageLog.logMessage(f"地图比例尺: {map_item.scale()}", tag="Plugins", level=Qgis.MessageLevel.Warning)
             # QgsMessageLog.logMessage(f"地图单位: {self.project.distanceUnits()}", tag="Plugins", level=Qgis.MessageLevel.Warning)
 
-            # map_convertor = QgsMapToPixel().fromScale(map_item.scale(), self.project.distanceUnits(), self.config.out_resolution)
-            # map_convertor = QgsMapToPixel()
-            # screen_centroid = map_convertor.transform(centroid)
             layout_centroid = map_item.mapToItemCoords(QPoint(centroid.x(), centroid.y()))
             layout_radius = self.layout_length(map_item, radius, centroid)
 
@@ -152,7 +150,7 @@ class bacth_export:
             QgsMessageLog.logMessage(f"屏幕半径: {layout_radius}", tag="Plugins", level=Qgis.MessageLevel.Warning)
 
             ele_circle.attemptMove(QgsLayoutPoint(layout_centroid.x(), layout_centroid.y(), QgsUnitTypes.LayoutUnit.LayoutMillimeters))
-            ele_circle.setFixedSize(QgsLayoutSize(layout_radius, layout_radius))
+            ele_circle.setFixedSize(QgsLayoutSize(2 * layout_radius, 2 * layout_radius))
 
             exporter = QgsLayoutExporter(p_atlas.layout())
             exporter.exportToImage(os.path.join(ExportDir, p_atlas.currentFilename() + ".jpg"), QgsLayoutExporter.ImageExportSettings())

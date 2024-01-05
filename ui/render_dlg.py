@@ -231,6 +231,10 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
             layer = self.project.mapLayer(layer_poi_id)
             fni, field_name = get_field_index_no_case(layer, default_field.name_poi_type)
 
+            if fni < 0:
+                QgsMessageLog.logMessage(f"插件{PLUGIN_NAME}:字段type不存在,无法自动配色.", tag="Plugins", level=Qgis.MessageLevel.Warning)
+                return
+
             poi_type_dict = {}
             spec_dict = {}
             for fea in layer.getFeatures():
@@ -268,7 +272,7 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
             fni, field_name = get_field_index_no_case(layer, default_field.name_metro_line_id)
 
             if fni < 0:
-                QgsMessageLog.logMessage(f"插件{PLUGIN_NAME}:轨道线路编号字段lineID不存在,无法自动配色.", tag="Plugins", level=Qgis.MessageLevel.Warning)
+                QgsMessageLog.logMessage(f"插件{PLUGIN_NAME}:字段lineID不存在,无法自动配色.", tag="Plugins", level=Qgis.MessageLevel.Warning)
                 return
 
             network_type = {}
