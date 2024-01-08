@@ -64,7 +64,7 @@ class bacth_export:
 
         QgsMessageLog.logMessage(f"图片格式: {out_width} * {out_height} * {out_resolution}", tag="Plugins", level=Qgis.MessageLevel.Warning)
 
-        layoutName = "renderUP_atlas"
+        layoutName = "renderUP_layout"
         manager = self.project.layoutManager()
         layouts_list = manager.printLayouts()
         # remove any duplicate layouts
@@ -78,42 +78,22 @@ class bacth_export:
         pc = layout.pageCollection()
         pc.pages()[0].setPageSize(QgsLayoutSize(out_width, out_height, QgsUnitTypes.LayoutUnit.LayoutPixels))
 
-        # layout: QgsPrintLayout = manager.layoutByName(layoutName)
-
-        map_item = QgsLayoutItemMap(layout)
-        map_item.setAtlasDriven(True)
-        map_item.setAtlasScalingMode(QgsLayoutItemMap.AtlasScalingMode.Predefined)
-        map_item.mapSettings(self.iface.mapCanvas().extent(), QSizeF(out_width, out_height), dpi=out_resolution, includeLayerSettings=True)
-        # map.setAtlasMargin(0.05)
-        map_item.setRect(0, 0, out_width, out_height)
-        # map.zoomToExtent(self.iface.mapCanvas().extent())
-        map_item.setBackgroundColor(QColor(255, 255, 255, 0))
-        layout.addLayoutItem(map_item)
-
-        map_item.attemptMove(QgsLayoutPoint(0, 0, QgsUnitTypes.LayoutUnit.LayoutPixels))
-        map_item.attemptResize(QgsLayoutSize(out_width, out_height, QgsUnitTypes.LayoutUnit.LayoutPixels))
-
-        p_atlas = layout.atlas()
-        p_atlas.setCoverageLayer(block_layer)
-        p_atlas.setEnabled(True)
-
-        p_atlas.beginRender()
+        map_item = self.draw_layout_mapitem(layout, out_width, out_height, out_resolution)
 
         circle_symbol_layer = QgsSimpleFillSymbolLayer.create({
-            'outline_color': "#C00000",
+            'outline_color': "64,64,64,77",
             'color': '0,0,0,0',
-            'outline_width': "5",
-            'outline_width_unit': 'Pixel'
+            'outline_style': 'dot',
+            'outline_width': "3",
+            'outline_width_unit': 'Points'
         })
-        # circle_symbol_layer.setColor(QColor(234, 245, 123, 0))
         circle_symbol = QgsFillSymbol()
         circle_symbol.changeSymbolLayer(0, circle_symbol_layer)
-        # circle_symbol.appendSymbolLayer(circle_symbol_layer)
 
-        for i in range(0, p_atlas.count()):
-            # Creata a exporter Layout for each layout generate with Atlas
-            feature = block_layer.getFeature(i)
+        for feature in block_layer.getFeatures():
+            fea_id = str(feature.id())
             geom = feature.geometry()
+            project_name = os.path.join(ExportDir, f"{fea_id}.qgs")
 
             if block_layer.crs().isValid():
                 sourceCrs = QgsCoordinateReferenceSystem(epsg_code(block_layer.crs()))
@@ -124,14 +104,8 @@ class bacth_export:
                     geom.transform(tr)
 
             centroid = feature.geometry().pointOnSurface().asPoint()
-
             extent = QgsRectangle.fromCenterAndSize(centroid, 2 * radius, 2 * radius)
-            # extent = geom.boundingBox()
-            # extent.scale(0.8)
             map_item.zoomToExtent(extent)
-            # map_item.setExtent(extent)
-
-            QgsMessageLog.logMessage(str(extent.asWktPolygon()), tag="Plugins", level=Qgis.MessageLevel.Warning)
 
             ele_circle = QgsLayoutItemShape(layout)
             ele_circle.setShapeType(QgsLayoutItemShape.Shape.Ellipse)
@@ -139,26 +113,78 @@ class bacth_export:
             ele_circle.setSymbol(circle_symbol)
             layout.addLayoutItem(ele_circle)
 
-            QgsMessageLog.logMessage(f"中心点: {centroid.x()}, {centroid.y()}", tag="Plugins", level=Qgis.MessageLevel.Warning)
-            # QgsMessageLog.logMessage(f"地图比例尺: {map_item.scale()}", tag="Plugins", level=Qgis.MessageLevel.Warning)
-            # QgsMessageLog.logMessage(f"地图单位: {self.project.distanceUnits()}", tag="Plugins", level=Qgis.MessageLevel.Warning)
-
             layout_centroid = map_item.mapToItemCoords(QPoint(centroid.x(), centroid.y()))
             layout_radius = self.layout_length(map_item, radius, centroid)
-
-            QgsMessageLog.logMessage(f"屏幕中心点: {layout_centroid.x()}, {layout_centroid.y()}", tag="Plugins", level=Qgis.MessageLevel.Warning)
-            QgsMessageLog.logMessage(f"屏幕半径: {layout_radius}", tag="Plugins", level=Qgis.MessageLevel.Warning)
 
             ele_circle.attemptMove(QgsLayoutPoint(layout_centroid.x(), layout_centroid.y(), QgsUnitTypes.LayoutUnit.LayoutMillimeters))
             ele_circle.setFixedSize(QgsLayoutSize(2 * layout_radius, 2 * layout_radius))
 
-            exporter = QgsLayoutExporter(p_atlas.layout())
-            exporter.exportToImage(os.path.join(ExportDir, p_atlas.currentFilename() + ".jpg"), QgsLayoutExporter.ImageExportSettings())
+            exporter = QgsLayoutExporter(layout)
 
-            # Create Next Layout
-            p_atlas.next()
+            self.project.write(project_name)
+            QgsMessageLog.logMessage(project_name, tag="Plugins", level=Qgis.MessageLevel.Warning)
 
-        p_atlas.endRender()
+            if out_format == 'pdf':
+                exporter.exportToPdf(os.path.join(ExportDir, f"out_{fea_id}.pdf"), QgsLayoutExporter.PdfExportSettings())
+            else:
+                exporter.exportToImage(os.path.join(ExportDir, f"out_{fea_id}.{out_format}"), QgsLayoutExporter.ImageExportSettings())
+
+            # layout.removeLayoutItem(ele_circle)
+        # p_atlas = layout.atlas()
+        # p_atlas.setCoverageLayer(block_layer)
+        # p_atlas.setEnabled(True)
+        #
+        # p_atlas.beginRender()
+
+        # for i in range(0, p_atlas.count()):
+        #     # Creata a exporter Layout for each layout generate with Atlas
+        #     feature = block_layer.getFeature(i)
+        #     geom = feature.geometry()
+        #
+        #     if block_layer.crs().isValid():
+        #         sourceCrs = QgsCoordinateReferenceSystem(epsg_code(block_layer.crs()))
+        #         destCrs = QgsCoordinateReferenceSystem(epsg_code(self.project.crs()))
+        #
+        #         if sourceCrs != destCrs:
+        #             tr = QgsCoordinateTransform(sourceCrs, destCrs, self.project)
+        #             geom.transform(tr)
+        #
+        #     centroid = feature.geometry().pointOnSurface().asPoint()
+        #
+        #     extent = QgsRectangle.fromCenterAndSize(centroid, 2 * radius, 2 * radius)
+        #     # extent = geom.boundingBox()
+        #     # extent.scale(0.8)
+        #     map_item.zoomToExtent(extent)
+        #     # map_item.setExtent(extent)
+        #
+        #     QgsMessageLog.logMessage(str(extent.asWktPolygon()), tag="Plugins", level=Qgis.MessageLevel.Warning)
+        #
+        #     ele_circle = QgsLayoutItemShape(layout)
+        #     ele_circle.setShapeType(QgsLayoutItemShape.Shape.Ellipse)
+        #     ele_circle.setReferencePoint(QgsLayoutItem.ReferencePoint.Middle)
+        #     ele_circle.setSymbol(circle_symbol)
+        #     layout.addLayoutItem(ele_circle)
+        #
+        #     QgsMessageLog.logMessage(f"中心点: {centroid.x()}, {centroid.y()}", tag="Plugins", level=Qgis.MessageLevel.Warning)
+        #     # QgsMessageLog.logMessage(f"地图比例尺: {map_item.scale()}", tag="Plugins", level=Qgis.MessageLevel.Warning)
+        #     # QgsMessageLog.logMessage(f"地图单位: {self.project.distanceUnits()}", tag="Plugins", level=Qgis.MessageLevel.Warning)
+        #
+        #     layout_centroid = map_item.mapToItemCoords(QPoint(centroid.x(), centroid.y()))
+        #     layout_radius = self.layout_length(map_item, radius, centroid)
+        #
+        #     QgsMessageLog.logMessage(f"屏幕中心点: {layout_centroid.x()}, {layout_centroid.y()}", tag="Plugins", level=Qgis.MessageLevel.Warning)
+        #     QgsMessageLog.logMessage(f"屏幕半径: {layout_radius}", tag="Plugins", level=Qgis.MessageLevel.Warning)
+        #
+        #     ele_circle.attemptMove(QgsLayoutPoint(layout_centroid.x(), layout_centroid.y(), QgsUnitTypes.LayoutUnit.LayoutMillimeters))
+        #     ele_circle.setFixedSize(QgsLayoutSize(2 * layout_radius, 2 * layout_radius))
+        #
+        #     exporter = QgsLayoutExporter(p_atlas.layout())
+        #     exporter.exportToImage(os.path.join(ExportDir, p_atlas.currentFilename() + ".jpg"), QgsLayoutExporter.ImageExportSettings())
+        #
+        #     # Create Next Layout
+        #     p_atlas.next()
+        #
+        # p_atlas.endRender()
 
         # map = QgsLayoutItemMap(layout)
         # map.setRect(0, 0, 1000, 1000)
@@ -216,12 +242,27 @@ class bacth_export:
         #
         #     # self.iface.mapCanvas().saveAsImage(os.path.join(ExportDir, f"{fea_id}.png"))
         #     image.save(os.path.join(ExportDir, f"{fea_id}.png"))
+    def draw_layout_mapitem(self, layout, out_width, out_height, out_resolution):
+        map_item = QgsLayoutItemMap(layout)
+        map_item.setAtlasDriven(True)
+        map_item.setAtlasScalingMode(QgsLayoutItemMap.AtlasScalingMode.Predefined)
+        map_item.mapSettings(self.iface.mapCanvas().extent(), QSizeF(out_width, out_height), dpi=out_resolution, includeLayerSettings=True)
+        # map.setAtlasMargin(0.05)
+        map_item.setRect(0, 0, out_width, out_height)
+        # map.zoomToExtent(self.iface.mapCanvas().extent())
+        map_item.setBackgroundColor(QColor(255, 255, 255, 0))
+        layout.addLayoutItem(map_item)
+
+        map_item.attemptMove(QgsLayoutPoint(0, 0, QgsUnitTypes.LayoutUnit.LayoutPixels))
+        map_item.attemptResize(QgsLayoutSize(out_width, out_height, QgsUnitTypes.LayoutUnit.LayoutPixels))
+
+        return map_item
+
     def layout_length(self, map_item, length, start_pt):
         layout_start_pt = map_item.mapToItemCoords(QPoint(start_pt.x(), start_pt.y()))
         map_length = self.convert_distance(length)
         layout_end_pt = map_item.mapToItemCoords(QPoint(start_pt.x() + map_length, start_pt.y()))
         return layout_end_pt.x() - layout_start_pt.x()
-
 
     def convert_distance(self, distance):
         d = QgsDistanceArea()
