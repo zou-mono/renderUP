@@ -21,7 +21,7 @@
  *                                                                         *
  ***************************************************************************/
 """
-import pathlib
+import pathlib, time
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMessageBox, QMenu, QToolButton
@@ -119,6 +119,12 @@ class renderUP:
         self.qset.setValue(get_qset_name("draw_northarrow"), Qt.CheckState.Checked)
         self.qset.setValue(get_qset_name("draw_scalebar"), Qt.CheckState.Checked)
         self.qset.setValue(get_qset_name("draw_legend"), Qt.CheckState.Checked)
+
+        self.qset.setValue(get_qset_name("block_layer_id"), None)
+        self.qset.setValue(get_qset_name("poi_layer_id"), None)
+        self.qset.setValue(get_qset_name("metro_station_layer_id"), None)
+        self.qset.setValue(get_qset_name("metro_network_layer_id"), None)
+        self.qset.setValue(get_qset_name("road_network_layer_id"), None)
 
         # self.qset.value(get_qset_name("export"), None)
         # self.qset.value(get_qset_name("out_path"), ExportDir)
@@ -339,20 +345,28 @@ class renderUP:
     def run_export(self):
         block_layer_id = self.qset.value(get_qset_name("block_layer_id"))
         if block_layer_id is None:
-            QgsMessageLog.logMessage("block_layer_id为空", tag=MESSAGE_TAG, level=Qgis.MessageLevel.Warning)
+            QgsMessageLog.logMessage("地块图层为空", tag=MESSAGE_TAG, level=Qgis.MessageLevel.Warning)
             return
 
         block_layer = self.project.mapLayer(block_layer_id)
 
-        if block_layer.type() != QgsMapLayerType.VectorLayer:
-            QgsMessageLog.logMessage("block_layer不是矢量图层", tag=MESSAGE_TAG, level=Qgis.MessageLevel.Warning)
+        metro_station_layer_id = self.qset.value(get_qset_name("metro_station_layer_id"))
+        if metro_station_layer_id is None:
+            QgsMessageLog.logMessage("轨道站点图层为空", tag=MESSAGE_TAG, level=Qgis.MessageLevel.Warning)
+            return
+
+        poi_layer_id = self.qset.value(get_qset_name("poi_layer_id"))
+        if poi_layer_id is None:
+            QgsMessageLog.logMessage("POI图层为空", tag=MESSAGE_TAG, level=Qgis.MessageLevel.Warning)
             return
 
         out_path = self.qset.value(get_qset_name("out_path"))
         if not os.path.exists(out_path):
             os.mkdir(out_path)
-        if not os.path.exists(os.path.join(out_path, "project_files")):
-            os.mkdir(os.path.join(out_path, "project_files"))
+        # project_path = os.path.join(out_path, "project_files_{}".format(time.strftime('%Y-%m-%d-%H-%M-%S')))
+        project_path = os.path.join(out_path, "project_files")
+        if not os.path.exists(project_path):
+            os.mkdir(project_path)
 
         # QgsMessageLog.logMessage("开始1导出...", tag="Plugins", level=Qgis.MessageLevel.Warning)
         globals()['batch_export'] = bacth_export('批量导出图片', self.iface, block_layer)

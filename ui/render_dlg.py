@@ -97,6 +97,8 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
         self.cmb_poi_layer.installEventFilter(self)
         self.cmb_block_layer.installEventFilter(self)
         self.cmb_block_layer.currentIndexChanged.connect(self.block_layer_changed)
+        self.cmb_poi_layer.currentIndexChanged.connect(self.poi_layer_changed)
+        self.cmb_metro_station_layer.currentIndexChanged.connect(self.metro_station_layer_changed)
 
         self.ckb_draw_circle.stateChanged.connect(self.enable_draw_circle)
         self.ckb_draw_northarrow.stateChanged.connect(self.enable_draw_northarrow)
@@ -220,6 +222,20 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
                                             '国家大地2000投影(EPSG:4547)、国家大地2000经纬度(EPSG:4490)或者WGS84经纬度(EPSG:4326))',
                                 QMessageBox.Ok)
         self.qset.setValue(get_qset_name("block_layer_id"), self.current_block_layer_id)
+
+    def poi_layer_changed(self, index):
+        self.current_poi_layer_id = self.cmb_poi_layer.itemData(index)
+        layer = self.project.mapLayer(self.current_poi_layer_id)
+        if layer is None:
+            return
+        self.qset.setValue(get_qset_name("poi_layer_id"), self.current_poi_layer_id)
+
+    def metro_station_layer_changed(self, index):
+        self.current_metro_station_layer_id = self.cmb_metro_station_layer.itemData(index)
+        layer = self.project.mapLayer(self.current_metro_station_layer_id)
+        if layer is None:
+            return
+        self.qset.setValue(get_qset_name("metro_station_layer_id"), self.current_metro_station_layer_id)
 
     def btn_default_clicked(self):
         layer_image_id = self.cmb_image_layer.itemData(self.cmb_image_layer.currentIndex())

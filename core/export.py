@@ -10,7 +10,8 @@ from qgis._core import QgsMapSettings, QgsSettings, QgsProject, QgsMessageLog, Q
     QgsLayoutItemMap, QgsLayoutPoint, QgsUnitTypes, QgsLayoutSize, QgsLayoutExporter, QgsRectangle, QgsLayoutItemPage, \
     QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsDistanceArea, QgsCoordinateTransformContext, \
     QgsLayoutItemShape, QgsSimpleFillSymbolLayer, QgsFillSymbol, QgsLayoutItem, QgsMapToPixel, QgsTask, QgsApplication, \
-    QgsLayoutItemPicture, QgsLayoutItemScaleBar, QgsScaleBarSettings, QgsLayoutItemLegend, QgsLegendStyle
+    QgsLayoutItemPicture, QgsLayoutItemScaleBar, QgsScaleBarSettings, QgsLayoutItemLegend, QgsLegendStyle, QgsLayerTree, \
+    QgsLegendRenderer
 from qgis._gui import QgisInterface
 
 from ..utils import get_qset_name, get_field_index_no_case, default_field, ExportDir, epsg_code, PluginConfig, \
@@ -57,7 +58,19 @@ class bacth_export(QgsTask):
         draw_legend = self.config.draw_legend
         radius = self.config.radius
         out_path = os.path.join(self.config.out_path)
-        #
+
+        metro_station_layer_id = self.qset.value(get_qset_name("metro_station_layer_id"))
+        poi_layer_id = self.qset.value(get_qset_name("poi_layer_id"))
+        checked_layer_ids = {
+            "轨道站点": metro_station_layer_id,
+            "POI": poi_layer_id
+        }
+
+        # QgsMessageLog.logMessage(str(checked_layer_ids), tag=MESSAGE_TAG, level=Qgis.MessageLevel.Warning)
+
+        # lyrs_remove = [l for l in self.project.mapLayers().values() if l.id() not in checked_layer_ids]
+        # QgsMessageLog.logMessage(str(lyrs_remove), tag=MESSAGE_TAG, level=Qgis.MessageLevel.Warning)
+
         # if block_layer.crs().isValid():
         #     if epsg_code(block_layer.crs()) == 4326 or epsg_code(block_layer.crs()) == 4490:
         #         radius = self.convert_distance(radius)
@@ -90,9 +103,11 @@ class bacth_export(QgsTask):
         circle_symbol = QgsFillSymbol()
         circle_symbol.changeSymbolLayer(0, circle_symbol_layer)
 
-        i = 1
+        # lyrs_exist = [l for l in QgsProject().instance().layerTreeRoot().children() if l.isVisible()]
+
+        ifeat = 1
         total_num = self.block_layer.featureCount()
-        for feature in  self.block_layer.getFeatures():
+        for feature in self.block_layer.getFeatures():
             fea_id = str(feature.id())
             geom = feature.geometry()
             project_name = os.path.join(out_path, "project_files", f"{fea_id}.qgs")
@@ -177,12 +192,12 @@ class bacth_export(QgsTask):
                     layout.addLayoutItem(scalebar_item)
 
                 if draw_legend:
-                    QgsMessageLog.logMessage(DefaultFont, tag=MESSAGE_TAG, level=Qgis.MessageLevel.Warning)
-
                     legend_item = QgsLayoutItemLegend(layout)
                     legend_item.setLinkedMap(map_item)
                     title_style = QgsLegendStyle()
-                    title_style.setFont(QFont(DefaultFont, 12, 1, False))
+                    font = QFont(DefaultFont, 12)
+                    font.setBold(True)
+                    title_style.setFont(font)
                     legend_item.setStyle(QgsLegendStyle.Style.Title, title_style)
                     legend_item.setTitle("图例")
 
@@ -190,22 +205,34 @@ class bacth_export(QgsTask):
                     symbol_label_style.setFont(QFont(DefaultFont, 10, 1, False))
                     legend_item.setStyle(QgsLegendStyle.Style.SymbolLabel, symbol_label_style)
 
-                    lyrs_to_add = [l for l in QgsProject().instance().layerTreeRoot().children() if l.isVisible()]
-
-                    group = legend_item.model().rootGroup()
-                    group.clear()
-                    for l in lyrs_to_add:
-                        if l.nodeType() == 0:
-                            subgroup = group.addGroup(l.name())
-                            checked = l.checkedLayers()
-                            for c in checked:
-                                subgroup.addLayer(c)
-                        # elif l.nodeType() == 1:
-                        #     group.addLayer(l.layer())
-
                     legend_item.setLegendFilterByMapEnabled(True)
                     legend_item.setAutoUpdateModel(autoUpdate=False)
+                    group = legend_item.model().rootGroup()
+                    # group.clear()
+                    legend_item.model().setRootGroup(group)
 
+                    for tr in group.children():
+                        if tr.layerId() == checked_layer_ids["轨道站点"]:
+                            tr.setCustomProperty("legend/title-label", "轨道站点")
+                        elif tr.layerId() == checked_layer_ids["POI"]:
+                            tr.setCustomProperty("legend/title-label", "POI")
+                            QgsLegendRenderer.setNodeLegendStyle(tr, QgsLegendStyle.Style.Hidden)
+                        else:
+                            group.removeLayer(self.project.mapLayer(tr.layerId()))
+
+                    # root = QgsLayerTree()
+                    # for l_name, l_id in checked_layer_ids.items():
+                    #     tree_layer = root.addLayer(QgsProject.instance().mapLayer(l_id))
+                    #     tree_layer.setUseLayerName(False)
+                    #     tree_layer.setName(l_name)
+                    #     setattr(root, l_name, QgsLayerTree())
+
+                    # legend_item.updateLegend()
+                    legend_item.model().setRootGroup(group)
+                    legend_item.setBackgroundColor(QColor(255, 255, 255, 60))
+                    # legend_item.updateLegend()
+                    legend_item.adjustBoxSize()
+                    legend_item.refresh()
                     layout.addLayoutItem(legend_item)
 
             self.project.write(project_name)
@@ -218,12 +245,19 @@ class bacth_export(QgsTask):
             else:
                 exporter.exportToImage(os.path.join(out_path, out_format, f"out_{fea_id}.{out_format}"), QgsLayoutExporter.ImageExportSettings())
 
-            self.setProgress(float(i * 100 / total_num))
-            i += 1
+            self.setProgress(float(ifeat * 100 / total_num))
+            ifeat += 1
         return True
 
     def finished(self, result: bool) -> None:
         QgsMessageLog.logMessage("export ok", tag=MESSAGE_TAG, level=Qgis.MessageLevel.Warning)
+
+    def cancel(self):
+        QgsMessageLog.logMessage(
+            '任务取消: "{name}"'.format(
+                name=self.description()),
+            MESSAGE_CATEGORY, Qgis.Info)
+        super().cancel()
 
     def draw_layout_mapitem(self, layout, out_width, out_height, out_resolution):
         map_item = QgsLayoutItemMap(layout)
