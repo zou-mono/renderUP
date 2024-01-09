@@ -1,12 +1,13 @@
 import base64
 import os
+import platform
 import re
 from dataclasses import dataclass
 from multiprocessing.pool import ThreadPool
 
 import requests
 import yaml
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QFontDatabase, QFont
 from qgis._core import Qgis, QgsCoordinateReferenceSystem, QgsMessageLog
 
 PLUGIN_NAME = "renderUP"
@@ -119,6 +120,33 @@ class PluginConfig:
     out_format: str = "png"
     draw_circle: bool = False
     radius: float = 0.0
+
+
+def get_default_font():
+    font_db = QFontDatabase()
+    fonts = font_db.families()
+    system_font = QFont()
+
+    if platform.system() == "Windows":
+        for font in fonts:
+            if font == "微软雅黑":
+                return "微软雅黑"
+            elif font == "宋体":
+                return "宋体"
+            else:
+                return system_font.defaultFamily()
+    elif platform.system() == "Darwin":
+        for font in fonts:
+            if font == "华文黑体":
+                return "华文黑体"
+            elif font == "STHeiti":
+                return "STHeiti"
+            else:
+                return system_font.defaultFamily()
+    elif platform.system() == "Linux":
+        return system_font.defaultFamily()
+
+
 
 
 def epsg_code(crs: QgsCoordinateReferenceSystem):

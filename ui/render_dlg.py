@@ -25,18 +25,19 @@ import logging
 import os
 
 from PyQt5.QtCore import QEvent, QSize, QRegularExpression
-from PyQt5.QtGui import QRegularExpressionValidator
+from PyQt5.QtGui import QRegularExpressionValidator, QColor, QFont
 from PyQt5.QtWidgets import QMessageBox
 from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
 from qgis._core import QgsMessageLog, Qgis, QgsProject, QgsMapLayerType, QgsWkbTypes, QgsSymbol, QgsMarkerSymbol, \
     QgsLineSymbol, QgsFillSymbol, QgsRendererCategory, QgsCategorizedSymbolRenderer, QgsLineSymbolLayer, \
     QgsSimpleLineSymbolLayer, QgsSvgMarkerSymbolLayer, QgsSimpleMarkerSymbolLayer, QgsUnitTypes, QgsFillSymbolLayer, \
-    QgsSimpleFillSymbolLayer, QgsSettings
+    QgsSimpleFillSymbolLayer, QgsSettings, QgsPalLayerSettings, QgsTextBufferSettings, QgsTextFormat, \
+    QgsVectorLayerSimpleLabeling
 from qgis._gui import QgisInterface
 
 from ..utils import get_field_index_no_case, default_field, metro_line_color_dict, PluginDir, poi_type_color_dict, \
-    get_qset_name, PLUGIN_NAME, check_crs, MESSAGE_TAG
+    get_qset_name, PLUGIN_NAME, check_crs, MESSAGE_TAG, get_default_font
 
 log = logging.getLogger('QGIS')
 
@@ -80,6 +81,8 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
         self.ckb_draw_circle.stateChanged.connect(self.enable_draw_circle)
         self.btn_default.clicked.connect(self.btn_default_clicked)
         self.txt_radius.textChanged.connect(self.on_txt_radius_changed)
+
+        self.default_font = get_default_font()
 
     def show(self) -> None:
         self.init_cmb_layers()
@@ -255,6 +258,9 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
             categrorized_renderer(layer, fni, poi_type_dict, field_name, spec_dict=spec_dict)
             self.iface.layerTreeView().refreshLayerSymbology(layer.id())
 
+            fni, field_name = get_field_index_no_case(layer, default_field.name_poi)
+            self.set_label(layer, field_name, font_size=8)
+
     def render_metro_station(self, layer_metro_station_id):
         if layer_metro_station_id is not None:
             layer = self.project.mapLayer(layer_metro_station_id)
@@ -265,6 +271,9 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
                 layer.renderer().symbol().changeSymbolLayer(0, symbol)
             layer.triggerRepaint()
             self.iface.layerTreeView().refreshLayerSymbology(layer.id())
+
+            fni, field_name = get_field_index_no_case(layer, default_field.name_metro_station_name)
+            self.set_label(layer, field_name, font_size=12, has_buffer=False)
 
     def render_mertro_network(self, layer_metro_network_id):
         if layer_metro_network_id is not None:
@@ -290,6 +299,30 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
 
             categrorized_renderer(layer, fni, network_type, field_name, spec_dict=spec_dict)
             self.iface.layerTreeView().refreshLayerSymbology(layer.id())
+
+    def set_label(self, layer, field_name, font_size=10, has_buffer=True):
+        layer_settings = QgsPalLayerSettings()
+        text_format = QgsTextFormat()
+        text_format.setFont(QFont(self.default_font, font_size))
+        text_format.setSize(font_size)
+
+        if has_buffer:
+            buffer_settings = QgsTextBufferSettings()
+            buffer_settings.setEnabled(True)
+            buffer_settings.setSize(1)
+            buffer_settings.setColor(QColor("white"))
+            text_format.setBuffer(buffer_settings)
+
+        layer_settings.setFormat(text_format)
+        layer_settings.fieldName = field_name
+        layer_settings.placement = Qgis.LabelPlacement.AroundPoint
+
+        layer_settings.enabled = True
+
+        layer_settings = QgsVectorLayerSimpleLabeling(layer_settings)
+        layer.setLabelsEnabled(True)
+        layer.setLabeling(layer_settings)
+        layer.triggerRepaint()
 
     def enable_draw_circle(self):
         if self.ckb_draw_circle.isChecked():

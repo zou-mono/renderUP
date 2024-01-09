@@ -77,8 +77,8 @@ class bacth_export(QgsTask):
             'outline_color': "64,64,64,77",
             'color': '0,0,0,0',
             'outline_style': 'dot',
-            'outline_width': "3",
-            'outline_width_unit': 'Points'
+            'outline_width': "5",
+            'outline_width_unit': 'Pixel'
         })
         circle_symbol = QgsFillSymbol()
         circle_symbol.changeSymbolLayer(0, circle_symbol_layer)
@@ -100,6 +100,7 @@ class bacth_export(QgsTask):
 
             centroid = feature.geometry().pointOnSurface().asPoint()
             extent = QgsRectangle.fromCenterAndSize(centroid, 2 * radius, 2 * radius)
+            extent.scale(1.2)
             map_item.zoomToExtent(extent)
 
             if self.isCanceled():
