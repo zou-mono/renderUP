@@ -23,6 +23,7 @@
 """
 import logging
 import os
+import pathlib
 
 from PyQt5.QtCore import QThread, pyqtSignal, QSize, QRegularExpression
 from PyQt5.QtGui import QIntValidator, QRegularExpressionValidator
@@ -68,6 +69,7 @@ class SettingDialog(QtWidgets.QDialog, FORM_CLASS):
             subdomain=self.qset.value(get_qset_name("subdomain")),
             extramap_enabled=True,
             lastpath=self.qset.value(get_qset_name("lastpath")),
+            out_path=self.qset.value(get_qset_name("out_path")),
             out_width=self.qset.value(get_qset_name("out_width"), type=int),
             out_height=self.qset.value(get_qset_name("out_height"), type=int),
             out_resolution=self.qset.value(get_qset_name("out_resolution"), type=int),
@@ -82,6 +84,8 @@ class SettingDialog(QtWidgets.QDialog, FORM_CLASS):
             self.label_keystatus.setText("正常")
         else:
             self.label_keystatus.setText("无效")
+
+        self.mlineEdit_outpath.setText(self.config.out_path)
 
         reg = QRegularExpression(r"^[1-9][0-9]*$")
         int_validator = QRegularExpressionValidator()
@@ -106,22 +110,27 @@ class SettingDialog(QtWidgets.QDialog, FORM_CLASS):
         self.btn_select_file.clicked.connect(self.btn_selectfile_clicked)
 
     def closeEvent(self, event):
-        self.qset.setValue(f"{PLUGIN_NAME}/extra/out_width", int(self.txt_width.text()))
-        self.qset.setValue(f"{PLUGIN_NAME}/extra/out_height", int(self.txt_height.text()))
-        self.qset.setValue(f"{PLUGIN_NAME}/extra/out_resolution", int(self.txt_resolution.text()))
-        self.qset.setValue(f"{PLUGIN_NAME}/extra/out_format", self.cmb_format.currentText())
+        self.qset.setValue(f"{PLUGIN_NAME}/settings/out_width", int(self.txt_width.text()))
+        self.qset.setValue(f"{PLUGIN_NAME}/settings/out_height", int(self.txt_height.text()))
+        self.qset.setValue(f"{PLUGIN_NAME}/settings/out_resolution", int(self.txt_resolution.text()))
+        self.qset.setValue(f"{PLUGIN_NAME}/settings/out_format", self.cmb_format.currentText())
+        # self.qset.setValue(f"{PLUGIN_NAME}/settings/out_path", self.mlineEdit_outpath.text())
+
+        path = pathlib.Path(self.qset.value(get_qset_name("out_path")))
+        if path.is_dir():
+            self.qset.setValue(get_qset_name("out_path"), self.mlineEdit_outpath.text())
 
         super(SettingDialog, self).close()
 
     #  选择输出目录
     def btn_selectfile_clicked(self):
-        last_path = self.qset.value(get_qset_name("lastpath"))
+        lastpath = self.qset.value(get_qset_name("lastpath"))
 
         fileName = QtWidgets.QFileDialog.getExistingDirectory(self, "选择输出结果的文件夹",
-                                                              last_path, QFileDialog.ShowDirsOnly)
+                                                              lastpath, QFileDialog.ShowDirsOnly)
 
         self.mlineEdit_outpath.setText(fileName)
-        self.qset.setValue(get_qset_name("lastpath"), last_path)
+        self.qset.setValue(get_qset_name("lastpath"), lastpath)
 
     def handle_ping_finished(self, status):
         min_time = min(status)

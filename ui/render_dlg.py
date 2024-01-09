@@ -36,7 +36,7 @@ from qgis._core import QgsMessageLog, Qgis, QgsProject, QgsMapLayerType, QgsWkbT
 from qgis._gui import QgisInterface
 
 from ..utils import get_field_index_no_case, default_field, metro_line_color_dict, PluginDir, poi_type_color_dict, \
-    get_qset_name, PLUGIN_NAME, check_crs
+    get_qset_name, PLUGIN_NAME, check_crs, MESSAGE_TAG
 
 log = logging.getLogger('QGIS')
 
@@ -232,7 +232,7 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
             fni, field_name = get_field_index_no_case(layer, default_field.name_poi_type)
 
             if fni < 0:
-                QgsMessageLog.logMessage(f"插件{PLUGIN_NAME}:字段type不存在,无法自动配色.", tag="Plugins", level=Qgis.MessageLevel.Warning)
+                QgsMessageLog.logMessage(f"插件{PLUGIN_NAME}:字段type不存在,无法自动配色.", tag=MESSAGE_TAG, level=Qgis.MessageLevel.Warning)
                 return
 
             poi_type_dict = {}
@@ -272,7 +272,7 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
             fni, field_name = get_field_index_no_case(layer, default_field.name_metro_line_id)
 
             if fni < 0:
-                QgsMessageLog.logMessage(f"插件{PLUGIN_NAME}:字段lineID不存在,无法自动配色.", tag="Plugins", level=Qgis.MessageLevel.Warning)
+                QgsMessageLog.logMessage(f"插件{PLUGIN_NAME}:字段lineID不存在,无法自动配色.", tag=MESSAGE_TAG, level=Qgis.MessageLevel.Warning)
                 return
 
             network_type = {}
@@ -293,19 +293,19 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
 
     def enable_draw_circle(self):
         if self.ckb_draw_circle.isChecked():
-            self.qset.setValue(f"{PLUGIN_NAME}/extra/draw_circle", True)
+            self.qset.setValue(get_qset_name("draw_circle"), True)
             self.lbl_radius.setVisible(True)
             self.txt_radius.setVisible(True)
             self.txt_radius.setText(str(self.qset.value(get_qset_name("radius"))))
         else:
-            self.qset.setValue(f"{PLUGIN_NAME}/extra/draw_circle", False)
+            self.qset.setValue(get_qset_name("draw_circle"), False)
             self.lbl_radius.setVisible(False)
             self.txt_radius.setVisible(False)
 
     def on_txt_radius_changed(self):
         if self.txt_radius.text() == "":
             return
-        self.qset.setValue(f"{PLUGIN_NAME}/extra/radius", float(self.txt_radius.text()))
+        self.qset.setValue(get_qset_name("radius"), float(self.txt_radius.text()))
 
 
 def validatedDefaultSymbol(geometryType):

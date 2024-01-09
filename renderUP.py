@@ -21,18 +21,21 @@
  *                                                                         *
  ***************************************************************************/
 """
+import pathlib
+
 from PyQt5.QtWidgets import QMessageBox, QMenu, QToolButton
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtWidgets import QAction
 
 # Initialize Qt resources from file resources.py
-from qgis._core import QgsProject, QgsMessageLog, Qgis, QgsSettings, QgsStyle
+from qgis._core import QgsProject, QgsMessageLog, Qgis, QgsSettings, QgsStyle, QgsApplication, QgsTask, QgsMapLayerType
 from qgis._gui import QgsStyleManagerDialog
 
+from .core import export
 from .core.export import bacth_export
 from .core.image import add_tianditu_basemap, add_extra_map, get_extra_map_icon
 from .ui.setting_dlg import SettingDialog
-from .utils import iconlib, TianMapInfo, extra_maps, get_qset_name, PLUGIN_NAME, single_window
+from .utils import iconlib, TianMapInfo, extra_maps, get_qset_name, PLUGIN_NAME, single_window, ExportDir, MESSAGE_TAG
 # Import the code for the dialog
 from .ui.render_dlg import renderDialog
 import os.path
@@ -84,25 +87,35 @@ class renderUP:
             self.qset.setValue(f"{PLUGIN_NAME}/tianditu/random", True)
             self.qset.setValue(f"{PLUGIN_NAME}/tianditu/subdomain", "t0")
 
-        if not self.qset.contains(f"{PLUGIN_NAME}/extra/lastpath"):
-            self.qset.setValue(f"{PLUGIN_NAME}/extra/lastpath", os.path.expanduser("~"))
+        if not self.qset.contains(get_qset_name("lastpath")):
+            self.qset.setValue(get_qset_name("lastpath"), os.path.expanduser("~"))
+        else:
+            path = pathlib.Path(self.qset.value(get_qset_name("lastpath")))
+            if not path.is_dir():
+                self.qset.setValue(get_qset_name("lastpath"), os.path.expanduser("~"))
 
-        if not self.qset.contains(f"{PLUGIN_NAME}/extra/out_width"):
-            self.qset.setValue(f"{PLUGIN_NAME}/extra/out_width", 1920)
-        if not self.qset.contains(f"{PLUGIN_NAME}/extra/out_height"):
-            self.qset.setValue(f"{PLUGIN_NAME}/extra/out_height", 1080)
-        if not self.qset.contains(f"{PLUGIN_NAME}/extra/out_resolution"):
-            self.qset.setValue(f"{PLUGIN_NAME}/extra/out_resolution", 300)
-        if not self.qset.contains(f"{PLUGIN_NAME}/extra/out_format"):
-            self.qset.setValue(f"{PLUGIN_NAME}/extra/out_format", 'png')
-        if not self.qset.contains(f"{PLUGIN_NAME}/extra/draw_circle"):
-            self.qset.setValue(f"{PLUGIN_NAME}/extra/draw_circle", False)
-        if not self.qset.contains(f"{PLUGIN_NAME}/extra/radius"):
-            self.qset.setValue(f"{PLUGIN_NAME}/extra/radius", 1000)
+        if not self.qset.contains(get_qset_name("out_path")):
+            self.qset.setValue(get_qset_name("out_path"), ExportDir)
+        else:
+            path = pathlib.Path(self.qset.value(get_qset_name("out_path")))
+            if not path.is_dir():
+                self.qset.setValue(get_qset_name("out_path"), ExportDir)
 
-        self.qset.value(get_qset_name("export"), None)
-        self.qset.value(get_qset_name("outpath"), None)
-        self.qset.value(get_qset_name("outpath"), None)
+        if not self.qset.contains(get_qset_name("out_width")):
+            self.qset.setValue(get_qset_name("out_width"), 1920)
+        if not self.qset.contains(get_qset_name("out_height")):
+            self.qset.setValue(get_qset_name("out_height"), 1080)
+        if not self.qset.contains(get_qset_name("out_resolution")):
+            self.qset.setValue(get_qset_name("out_resolution"), 300)
+        if not self.qset.contains(get_qset_name("out_format")):
+            self.qset.setValue(get_qset_name("out_format"), 'png')
+        if not self.qset.contains(get_qset_name("draw_circle")):
+            self.qset.setValue(get_qset_name("draw_circle"), False)
+        if not self.qset.contains(get_qset_name("radius")):
+            self.qset.setValue(get_qset_name("radius"), 1000)
+
+        # self.qset.value(get_qset_name("export"), None)
+        # self.qset.value(get_qset_name("out_path"), ExportDir)
 
         self.menu = self.tr(u'&render urban planning')
 
@@ -318,5 +331,24 @@ class renderUP:
         frm.exec_()
 
     def run_export(self):
-        be = bacth_export(self.iface)
-        be.run()
+        block_layer_id = self.qset.value(get_qset_name("block_layer_id"))
+        if block_layer_id is None:
+            QgsMessageLog.logMessage("block_layer_id为空", tag=MESSAGE_TAG, level=Qgis.MessageLevel.Warning)
+            return
+
+        block_layer = self.project.mapLayer(block_layer_id)
+
+        if block_layer.type() != QgsMapLayerType.VectorLayer:
+            QgsMessageLog.logMessage("block_layer不是矢量图层", tag=MESSAGE_TAG, level=Qgis.MessageLevel.Warning)
+            return
+
+        out_path = self.qset.value(get_qset_name("out_path"))
+        if not os.path.exists(out_path):
+            os.mkdir(out_path)
+        if not os.path.exists(os.path.join(out_path, "project_files")):
+            os.mkdir(os.path.join(out_path, "project_files"))
+
+        # QgsMessageLog.logMessage("开始1导出...", tag="Plugins", level=Qgis.MessageLevel.Warning)
+        globals()['batch_export'] = bacth_export('批量导出图片', self.iface, block_layer)
+        # globals()['task1'] = QgsTask.fromFunction("sm1311", function=be.run, on_finished=be.completed)
+        QgsApplication.taskManager().addTask(globals()['batch_export'])

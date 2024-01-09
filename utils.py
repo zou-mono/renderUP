@@ -19,7 +19,8 @@ HEADER = {
 }
 
 PluginDir = os.path.dirname(__file__)
-ExportDir = os.path.join(os.path.dirname(__file__), "res")
+ExportDir = os.path.join(os.path.expanduser("~"), "renderup_res")
+MESSAGE_TAG = "RenderUP"
 
 # 图标
 iconlib = {
@@ -110,7 +111,8 @@ class PluginConfig:
     random_enabled: bool = True
     subdomain: str = "0"
     extramap_enabled: bool = True
-    lastpath: str = ""
+    lastpath: str = os.path.expanduser("~")
+    out_path: str = ""
     out_width: int = 1920
     out_height: int = 1080
     out_resolution: int = 300
@@ -128,12 +130,14 @@ def epsg_code(crs: QgsCoordinateReferenceSystem):
 
 def get_qset_name(key: str) -> str:
     section_tianditu = ["key", "random", "keyisvalid", "subdomain"]
-    section_other = ["extramap", "lastpath", "block_layer_id", "outpath",
-                     "out_width", "out_height", "out_resolution", "out_format", "draw_circle", "radius"]
+    section_layers = ["extramap",  "block_layer_id"]
+    section_settings = ["lastpath", "out_path", "out_width", "out_height", "out_resolution", "out_format", "draw_circle", "radius"]
     if key in section_tianditu:
         return f"{PLUGIN_NAME}/tianditu/{key}"
-    if key in section_other:
-        return f"{PLUGIN_NAME}/extra/{key}"
+    if key in section_layers:
+        return f"{PLUGIN_NAME}/layers/{key}"
+    if key in section_settings:
+        return f"{PLUGIN_NAME}/settings/{key}"
     return ""
 
 

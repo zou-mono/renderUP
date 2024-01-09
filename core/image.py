@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QMessageBox
 from qgis._core import QgsRasterLayer, QgsProject, QgsSettings, QgsMessageLog, Qgis
 
 from ..utils import PluginDir, tianditu_map_url, TIANDITU_HOME_URL, TianMapInfo, PLUGIN_NAME, current_qgis_version, \
-    check_crs
+    check_crs, MESSAGE_TAG
 
 
 def get_extra_map_icon(map_data: object):
@@ -81,7 +81,7 @@ def add_tianditu_basemap(maptype, project, parent=None):
                                         '国家大地2000投影(EPSG:4547)、国家大地2000经纬度(EPSG:4490)或者WGS84经纬度(EPSG:4326)',
                             QMessageBox.Ok)
     else:
-        QgsMessageLog.logMessage("插件{}: 当前坐标系统{}, 符合输入要求.".format(PLUGIN_NAME, crs.authid()), tag="Plugins", level=Qgis.MessageLevel.Info)
+        QgsMessageLog.logMessage("插件{}: 当前坐标系统{}, 符合输入要求.".format(PLUGIN_NAME, crs.authid()), tag=MESSAGE_TAG, level=Qgis.MessageLevel.Info)
 
     qset = QgsSettings()
     key = qset.value(f"{PLUGIN_NAME}/tianditu/key")
