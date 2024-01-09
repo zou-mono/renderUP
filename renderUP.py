@@ -23,6 +23,7 @@
 """
 import pathlib
 
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMessageBox, QMenu, QToolButton
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtWidgets import QAction
@@ -113,6 +114,11 @@ class renderUP:
             self.qset.setValue(get_qset_name("draw_circle"), False)
         if not self.qset.contains(get_qset_name("radius")):
             self.qset.setValue(get_qset_name("radius"), 1000)
+
+        self.qset.setValue(get_qset_name("draw_circle"), Qt.CheckState.Checked)
+        self.qset.setValue(get_qset_name("draw_northarrow"), Qt.CheckState.Checked)
+        self.qset.setValue(get_qset_name("draw_scalebar"), Qt.CheckState.Checked)
+        self.qset.setValue(get_qset_name("draw_legend"), Qt.CheckState.Checked)
 
         # self.qset.value(get_qset_name("export"), None)
         # self.qset.value(get_qset_name("out_path"), ExportDir)

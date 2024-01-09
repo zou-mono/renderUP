@@ -37,7 +37,7 @@ from qgis._core import QgsMessageLog, Qgis, QgsProject, QgsMapLayerType, QgsWkbT
 from qgis._gui import QgisInterface
 
 from ..utils import get_field_index_no_case, default_field, metro_line_color_dict, PluginDir, poi_type_color_dict, \
-    get_qset_name, PLUGIN_NAME, check_crs, MESSAGE_TAG, get_default_font
+    get_qset_name, PLUGIN_NAME, check_crs, MESSAGE_TAG, get_default_font, PluginConfig
 
 log = logging.getLogger('QGIS')
 
@@ -57,6 +57,26 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
         # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
         self.setFixedSize(QSize(480, 300))
+        self.qset = QgsSettings()
+
+        self.config = PluginConfig(
+            key=self.qset.value(get_qset_name("key")),
+            random_enabled=True,
+            keyisvalid=self.qset.value(get_qset_name("keyisvalid"), type=bool),
+            subdomain=self.qset.value(get_qset_name("subdomain")),
+            extramap_enabled=True,
+            lastpath=self.qset.value(get_qset_name("lastpath")),
+            out_path=self.qset.value(get_qset_name("out_path")),
+            out_width=self.qset.value(get_qset_name("out_width"), type=int),
+            out_height=self.qset.value(get_qset_name("out_height"), type=int),
+            out_resolution=self.qset.value(get_qset_name("out_resolution"), type=int),
+            out_format=self.qset.value(get_qset_name("out_format"), type=str),
+            draw_circle=self.qset.value(get_qset_name("draw_circle"), type=int),
+            draw_northarrow=self.qset.value(get_qset_name("draw_northarrow"), type=int),
+            draw_scalebar=self.qset.value(get_qset_name("draw_scalebar"), type=int),
+            draw_legend=self.qset.value(get_qset_name("draw_legend"), type=int),
+            radius=self.qset.value(get_qset_name("radius"), type=float)
+        )
 
         self.iface = iface
         self.project: QgsProject = QgsProject.instance()
@@ -79,6 +99,14 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
         self.cmb_block_layer.currentIndexChanged.connect(self.block_layer_changed)
 
         self.ckb_draw_circle.stateChanged.connect(self.enable_draw_circle)
+        self.ckb_draw_northarrow.stateChanged.connect(self.enable_draw_northarrow)
+        self.ckb_draw_scalebar.stateChanged.connect(self.enable_draw_scalebar)
+        self.ckb_draw_legend.stateChanged.connect(self.enable_draw_legend)
+        self.ckb_draw_circle.setCheckState(self.config.draw_circle)
+        self.ckb_draw_northarrow.setCheckState(self.config.draw_northarrow)
+        self.ckb_draw_scalebar.setCheckState(self.config.draw_scalebar)
+        self.ckb_draw_legend.setCheckState(self.config.draw_legend)
+
         self.btn_default.clicked.connect(self.btn_default_clicked)
         self.txt_radius.textChanged.connect(self.on_txt_radius_changed)
 
@@ -334,6 +362,25 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
             self.qset.setValue(get_qset_name("draw_circle"), False)
             self.lbl_radius.setVisible(False)
             self.txt_radius.setVisible(False)
+
+    def enable_draw_northarrow(self):
+        if self.ckb_draw_northarrow.isChecked():
+            self.qset.setValue(get_qset_name("draw_northarrow"), True)
+        else:
+            self.qset.setValue(get_qset_name("draw_northarrow"), False)
+
+    def enable_draw_scalebar(self):
+        if self.ckb_draw_scalebar.isChecked():
+            self.qset.setValue(get_qset_name("draw_scalebar"), True)
+        else:
+            self.qset.setValue(get_qset_name("draw_scalebar"), False)
+
+    def enable_draw_legend(self):
+        if self.ckb_draw_legend.isChecked():
+            self.qset.setValue(get_qset_name("draw_legend"), True)
+        else:
+            self.qset.setValue(get_qset_name("draw_legend"), False)
+
 
     def on_txt_radius_changed(self):
         if self.txt_radius.text() == "":

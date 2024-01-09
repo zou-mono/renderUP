@@ -21,6 +21,7 @@ HEADER = {
 
 PluginDir = os.path.dirname(__file__)
 ExportDir = os.path.join(os.path.expanduser("~"), "renderup_res")
+IconDir = os.path.join(PluginDir, "icons")
 MESSAGE_TAG = "RenderUP"
 
 # 图标
@@ -118,7 +119,10 @@ class PluginConfig:
     out_height: int = 1080
     out_resolution: int = 300
     out_format: str = "png"
-    draw_circle: bool = False
+    draw_circle: int = 2
+    draw_northarrow: int = 2
+    draw_scalebar: int = 2
+    draw_legend: int = 2
     radius: float = 0.0
 
 
@@ -159,13 +163,16 @@ def epsg_code(crs: QgsCoordinateReferenceSystem):
 def get_qset_name(key: str) -> str:
     section_tianditu = ["key", "random", "keyisvalid", "subdomain"]
     section_layers = ["extramap",  "block_layer_id"]
-    section_settings = ["lastpath", "out_path", "out_width", "out_height", "out_resolution", "out_format", "draw_circle", "radius"]
+    section_settings = ["lastpath", "out_path", "out_width", "out_height", "out_resolution", "out_format"]
+    section_render = ["draw_northarrow", "draw_scalebar", "draw_legend", "draw_circle", "radius"]
     if key in section_tianditu:
         return f"{PLUGIN_NAME}/tianditu/{key}"
     if key in section_layers:
         return f"{PLUGIN_NAME}/layers/{key}"
     if key in section_settings:
         return f"{PLUGIN_NAME}/settings/{key}"
+    if key in section_render:
+        return f"{PLUGIN_NAME}/render/{key}"
     return ""
 
 

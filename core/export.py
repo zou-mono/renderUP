@@ -9,11 +9,12 @@ from qgis._core import QgsMapSettings, QgsSettings, QgsProject, QgsMessageLog, Q
     QgsMapRendererCustomPainterJob, QgsMapRendererParallelJob, QgsMapRendererSequentialJob, QgsPrintLayout, \
     QgsLayoutItemMap, QgsLayoutPoint, QgsUnitTypes, QgsLayoutSize, QgsLayoutExporter, QgsRectangle, QgsLayoutItemPage, \
     QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsDistanceArea, QgsCoordinateTransformContext, \
-    QgsLayoutItemShape, QgsSimpleFillSymbolLayer, QgsFillSymbol, QgsLayoutItem, QgsMapToPixel, QgsTask
+    QgsLayoutItemShape, QgsSimpleFillSymbolLayer, QgsFillSymbol, QgsLayoutItem, QgsMapToPixel, QgsTask, QgsApplication, \
+    QgsLayoutItemPicture
 from qgis._gui import QgisInterface
 
 from ..utils import get_qset_name, get_field_index_no_case, default_field, ExportDir, epsg_code, PluginConfig, \
-    MESSAGE_TAG
+    MESSAGE_TAG, IconDir
 
 MESSAGE_CATEGORY = 'RenderUP'
 
@@ -39,7 +40,10 @@ class bacth_export(QgsTask):
             out_height=self.qset.value(get_qset_name("out_height"), type=int),
             out_resolution=self.qset.value(get_qset_name("out_resolution"), type=int),
             out_format=self.qset.value(get_qset_name("out_format"), type=str),
-            draw_circle=self.qset.value(get_qset_name("draw_circle"), type=bool),
+            draw_circle=self.qset.value(get_qset_name("draw_circle"), type=int),
+            draw_northarrow=self.qset.value(get_qset_name("draw_northarrow"), type=int),
+            draw_scalebar=self.qset.value(get_qset_name("draw_scalebar"), type=int),
+            draw_legend=self.qset.value(get_qset_name("draw_legend"), type=int),
             radius=self.qset.value(get_qset_name("radius"), type=float)
         )
 
@@ -48,6 +52,9 @@ class bacth_export(QgsTask):
         out_resolution = self.config.out_resolution
         out_format = self.config.out_format
         draw_circle = self.config.draw_circle
+        draw_northarrow = self.config.draw_northarrow
+        draw_scalebar = self.config.draw_scalebar
+        draw_legend = self.config.draw_legend
         radius = self.config.radius
         out_path = os.path.join(self.config.out_path)
         #
@@ -71,8 +78,6 @@ class bacth_export(QgsTask):
         pc = layout.pageCollection()
         pc.pages()[0].setPageSize(QgsLayoutSize(out_width, out_height, QgsUnitTypes.LayoutUnit.LayoutPixels))
 
-        map_item = self.draw_layout_mapitem(layout, out_width, out_height, out_resolution)
-
         circle_symbol_layer = QgsSimpleFillSymbolLayer.create({
             'outline_color': "64,64,64,77",
             'color': '0,0,0,0',
@@ -86,6 +91,8 @@ class bacth_export(QgsTask):
         i = 1
         total_num = self.block_layer.featureCount()
         for feature in  self.block_layer.getFeatures():
+            map_item = self.draw_layout_mapitem(layout, out_width, out_height, out_resolution)
+
             fea_id = str(feature.id())
             geom = feature.geometry()
             project_name = os.path.join(out_path, "project_files", f"{fea_id}.qgs")
@@ -119,9 +126,27 @@ class bacth_export(QgsTask):
                 ele_circle.attemptMove(QgsLayoutPoint(layout_centroid.x(), layout_centroid.y(), QgsUnitTypes.LayoutUnit.LayoutMillimeters))
                 ele_circle.setFixedSize(QgsLayoutSize(2 * layout_radius, 2 * layout_radius))
 
-            exporter = QgsLayoutExporter(layout)
+            if draw_northarrow:
+                north_path = os.path.join(IconDir, "north_arrow.svg")
+
+                if not os.path.exists(north_path):
+                    north_path = os.path.join(QgsApplication.prefixPath(), "svg", "arrows", "NorthArrow_10.svg")
+                    if not os.path.exists(north_path):
+                        north_path = None
+
+                if north_path is not None:
+                    out_north_width = 20 if out_width / 20 < 20 else int(out_width / 20)
+                    out_north_height = 20 if out_height / 20 < 20 else int(out_height / 20)
+
+                    north = QgsLayoutItemPicture(layout)
+                    north.setPicturePath(north_path)
+                    layout.addLayoutItem(north)
+                    north.attemptResize(QgsLayoutSize(out_north_width, out_north_height, QgsUnitTypes.LayoutUnit.LayoutPixels))
+                    north.attemptMove(QgsLayoutPoint(int(17 * out_width / 19), int(2 * out_height / 19), QgsUnitTypes.LayoutUnit.LayoutPixels))
 
             self.project.write(project_name)
+
+            exporter = QgsLayoutExporter(layout)
             # QgsMessageLog.logMessage(project_name, tag="Plugins", level=Qgis.MessageLevel.Warning)
 
             if out_format == 'pdf':
