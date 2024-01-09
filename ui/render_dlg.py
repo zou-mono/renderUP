@@ -37,7 +37,7 @@ from qgis._core import QgsMessageLog, Qgis, QgsProject, QgsMapLayerType, QgsWkbT
 from qgis._gui import QgisInterface
 
 from ..utils import get_field_index_no_case, default_field, metro_line_color_dict, PluginDir, poi_type_color_dict, \
-    get_qset_name, PLUGIN_NAME, check_crs, MESSAGE_TAG, get_default_font, PluginConfig
+    get_qset_name, PLUGIN_NAME, check_crs, MESSAGE_TAG, get_default_font, PluginConfig, DefaultFont
 
 log = logging.getLogger('QGIS')
 
@@ -109,8 +109,6 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
 
         self.btn_default.clicked.connect(self.btn_default_clicked)
         self.txt_radius.textChanged.connect(self.on_txt_radius_changed)
-
-        self.default_font = get_default_font()
 
     def show(self) -> None:
         self.init_cmb_layers()
@@ -331,7 +329,7 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
     def set_label(self, layer, field_name, font_size=10, has_buffer=True):
         layer_settings = QgsPalLayerSettings()
         text_format = QgsTextFormat()
-        text_format.setFont(QFont(self.default_font, font_size))
+        text_format.setFont(QFont(DefaultFont, font_size))
         text_format.setSize(font_size)
 
         if has_buffer:

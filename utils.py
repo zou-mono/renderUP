@@ -135,22 +135,16 @@ def get_default_font():
         for font in fonts:
             if font == "微软雅黑":
                 return "微软雅黑"
-            elif font == "宋体":
-                return "宋体"
-            else:
-                return system_font.defaultFamily()
+        return system_font.defaultFamily()
     elif platform.system() == "Darwin":
         for font in fonts:
-            if font == "华文黑体":
-                return "华文黑体"
-            elif font == "STHeiti":
+            if font == "STHeiti":
                 return "STHeiti"
-            else:
-                return system_font.defaultFamily()
+        return system_font.defaultFamily()
     elif platform.system() == "Linux":
         return system_font.defaultFamily()
 
-
+DefaultFont = get_default_font()
 
 
 def epsg_code(crs: QgsCoordinateReferenceSystem):
@@ -162,7 +156,8 @@ def epsg_code(crs: QgsCoordinateReferenceSystem):
 
 def get_qset_name(key: str) -> str:
     section_tianditu = ["key", "random", "keyisvalid", "subdomain"]
-    section_layers = ["extramap",  "block_layer_id"]
+    section_layers = ["block_layer_id", "poi_layer_id", "metro_network_layer_id",
+                      "metro_station_layer_id", "road_network_layer_id"]
     section_settings = ["lastpath", "out_path", "out_width", "out_height", "out_resolution", "out_format"]
     section_render = ["draw_northarrow", "draw_scalebar", "draw_legend", "draw_circle", "radius"]
     if key in section_tianditu:

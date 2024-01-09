@@ -3,18 +3,18 @@ import random
 import time
 
 from PyQt5.QtCore import QTimer, QSize, QSizeF, QPoint, Qt, QPointF, QThread, pyqtSignal
-from PyQt5.QtGui import QPainter, QImage, QColor
+from PyQt5.QtGui import QPainter, QImage, QColor, QFont
 from PyQt5.QtWidgets import QMessageBox
 from qgis._core import QgsMapSettings, QgsSettings, QgsProject, QgsMessageLog, Qgis, QgsMapLayerType, \
     QgsMapRendererCustomPainterJob, QgsMapRendererParallelJob, QgsMapRendererSequentialJob, QgsPrintLayout, \
     QgsLayoutItemMap, QgsLayoutPoint, QgsUnitTypes, QgsLayoutSize, QgsLayoutExporter, QgsRectangle, QgsLayoutItemPage, \
     QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsDistanceArea, QgsCoordinateTransformContext, \
     QgsLayoutItemShape, QgsSimpleFillSymbolLayer, QgsFillSymbol, QgsLayoutItem, QgsMapToPixel, QgsTask, QgsApplication, \
-    QgsLayoutItemPicture
+    QgsLayoutItemPicture, QgsLayoutItemScaleBar, QgsScaleBarSettings, QgsLayoutItemLegend, QgsLegendStyle
 from qgis._gui import QgisInterface
 
 from ..utils import get_qset_name, get_field_index_no_case, default_field, ExportDir, epsg_code, PluginConfig, \
-    MESSAGE_TAG, IconDir
+    MESSAGE_TAG, IconDir, DefaultFont
 
 MESSAGE_CATEGORY = 'RenderUP'
 
@@ -64,20 +64,22 @@ class bacth_export(QgsTask):
         #
         # QgsMessageLog.logMessage(f"图片格式: {out_width} * {out_height} * {out_resolution}", tag=MESSAGE_TAG, level=Qgis.MessageLevel.Warning)
 
-        layoutName = "renderUP_layout"
-        manager = self.project.layoutManager()
-        layouts_list = manager.printLayouts()
-        # remove any duplicate layouts
-        for layout in layouts_list:
-            if layout.name() == layoutName:
-                manager.removeLayout(layout)
-        layout = QgsPrintLayout(QgsProject.instance())
-        layout.initializeDefaults()
-        layout.setName(layoutName)
-        self.project.layoutManager().addLayout(layout)
-        pc = layout.pageCollection()
-        pc.pages()[0].setPageSize(QgsLayoutSize(out_width, out_height, QgsUnitTypes.LayoutUnit.LayoutPixels))
-
+        # layoutName = "renderUP_layout"
+        # manager = self.project.layoutManager()
+        # layouts_list = manager.printLayouts()
+        # # remove any duplicate layouts
+        # for layout in layouts_list:
+        #     if layout.name() == layoutName:
+        #         manager.removeLayout(layout)
+        # layout = QgsPrintLayout(QgsProject.instance())
+        # layout.initializeDefaults()
+        # layout.setName(layoutName)
+        # self.project.layoutManager().addLayout(layout)
+        # pc = layout.pageCollection()
+        # pc.pages()[0].setPageSize(QgsLayoutSize(out_width, out_height, QgsUnitTypes.LayoutUnit.LayoutPixels))
+        #
+        # map_item = self.draw_layout_mapitem(layout, out_width, out_height, out_resolution)
+        #
         circle_symbol_layer = QgsSimpleFillSymbolLayer.create({
             'outline_color': "64,64,64,77",
             'color': '0,0,0,0',
@@ -91,11 +93,25 @@ class bacth_export(QgsTask):
         i = 1
         total_num = self.block_layer.featureCount()
         for feature in  self.block_layer.getFeatures():
-            map_item = self.draw_layout_mapitem(layout, out_width, out_height, out_resolution)
-
             fea_id = str(feature.id())
             geom = feature.geometry()
             project_name = os.path.join(out_path, "project_files", f"{fea_id}.qgs")
+
+            layoutName = "renderUP_layout"
+            manager = self.project.layoutManager()
+            layouts_list = manager.printLayouts()
+            # remove any duplicate layouts
+            for layout in layouts_list:
+                if layout.name() == layoutName:
+                    manager.removeLayout(layout)
+            layout = QgsPrintLayout(QgsProject.instance())
+            layout.initializeDefaults()
+            layout.setName(layoutName)
+            self.project.layoutManager().addLayout(layout)
+            pc = layout.pageCollection()
+            pc.pages()[0].setPageSize(QgsLayoutSize(out_width, out_height, QgsUnitTypes.LayoutUnit.LayoutPixels))
+
+            map_item = self.draw_layout_mapitem(layout, out_width, out_height, out_resolution)
 
             if self.block_layer.crs().isValid():
                 sourceCrs = QgsCoordinateReferenceSystem(epsg_code(self.block_layer.crs()))
@@ -135,14 +151,62 @@ class bacth_export(QgsTask):
                         north_path = None
 
                 if north_path is not None:
-                    out_north_width = 20 if out_width / 20 < 20 else int(out_width / 20)
-                    out_north_height = 20 if out_height / 20 < 20 else int(out_height / 20)
+                    out_north_width = 20 if out_width / 15 < 20 else int(out_width / 15)
+                    out_north_height = 20 if out_height / 15 < 20 else int(out_height / 15)
 
-                    north = QgsLayoutItemPicture(layout)
-                    north.setPicturePath(north_path)
-                    layout.addLayoutItem(north)
-                    north.attemptResize(QgsLayoutSize(out_north_width, out_north_height, QgsUnitTypes.LayoutUnit.LayoutPixels))
-                    north.attemptMove(QgsLayoutPoint(int(17 * out_width / 19), int(2 * out_height / 19), QgsUnitTypes.LayoutUnit.LayoutPixels))
+                    north_item = QgsLayoutItemPicture(layout)
+                    north_item.setPicturePath(north_path)
+                    layout.addLayoutItem(north_item)
+                    north_item.attemptResize(QgsLayoutSize(out_north_width, out_north_height, QgsUnitTypes.LayoutUnit.LayoutPixels))
+                    north_item.attemptMove(QgsLayoutPoint(int(17 * out_width / 19), int(2 * out_height / 19), QgsUnitTypes.LayoutUnit.LayoutPixels))
+
+                if draw_scalebar:
+                    scalebar_item = QgsLayoutItemScaleBar(layout)
+                    scalebar_item.setLinkedMap(map_item)
+                    scalebar_item.setStyle("Line Ticks Up")
+                    scalebar_item.attemptMove(QgsLayoutPoint(int(1 * out_width / 19), int(16 * out_height / 19), QgsUnitTypes.LayoutUnit.LayoutPixels))
+                    scalebar_item.setUnitLabel("米")
+                    scalebar_item.setSegmentSizeMode(QgsScaleBarSettings.SegmentSizeMode.SegmentSizeFixed)
+                    scalebar_item.setNumberOfSegmentsLeft(0)
+                    scalebar_item.setNumberOfSegments(2)
+                    scalebar_item.setMaximumBarWidth(40)
+                    scalebar_item.setMinimumSize(QgsLayoutSize(40, 1.5))
+                    scalebar_item.setUnits(QgsUnitTypes.DistanceUnit.DistanceMeters)
+                    scalebar_item.setUnitsPerSegment(500)
+                    scalebar_item.setHeight(out_height / 500)
+                    layout.addLayoutItem(scalebar_item)
+
+                if draw_legend:
+                    QgsMessageLog.logMessage(DefaultFont, tag=MESSAGE_TAG, level=Qgis.MessageLevel.Warning)
+
+                    legend_item = QgsLayoutItemLegend(layout)
+                    legend_item.setLinkedMap(map_item)
+                    title_style = QgsLegendStyle()
+                    title_style.setFont(QFont(DefaultFont, 12, 1, False))
+                    legend_item.setStyle(QgsLegendStyle.Style.Title, title_style)
+                    legend_item.setTitle("图例")
+
+                    symbol_label_style = QgsLegendStyle()
+                    symbol_label_style.setFont(QFont(DefaultFont, 10, 1, False))
+                    legend_item.setStyle(QgsLegendStyle.Style.SymbolLabel, symbol_label_style)
+
+                    lyrs_to_add = [l for l in QgsProject().instance().layerTreeRoot().children() if l.isVisible()]
+
+                    group = legend_item.model().rootGroup()
+                    group.clear()
+                    for l in lyrs_to_add:
+                        if l.nodeType() == 0:
+                            subgroup = group.addGroup(l.name())
+                            checked = l.checkedLayers()
+                            for c in checked:
+                                subgroup.addLayer(c)
+                        # elif l.nodeType() == 1:
+                        #     group.addLayer(l.layer())
+
+                    legend_item.setLegendFilterByMapEnabled(True)
+                    legend_item.setAutoUpdateModel(autoUpdate=False)
+
+                    layout.addLayoutItem(legend_item)
 
             self.project.write(project_name)
 
@@ -163,8 +227,8 @@ class bacth_export(QgsTask):
 
     def draw_layout_mapitem(self, layout, out_width, out_height, out_resolution):
         map_item = QgsLayoutItemMap(layout)
-        map_item.setAtlasDriven(True)
-        map_item.setAtlasScalingMode(QgsLayoutItemMap.AtlasScalingMode.Predefined)
+        # map_item.setAtlasDriven(True)
+        # map_item.setAtlasScalingMode(QgsLayoutItemMap.AtlasScalingMode.Predefined)
         map_item.mapSettings(self.iface.mapCanvas().extent(), QSizeF(out_width, out_height), dpi=out_resolution, includeLayerSettings=True)
         # map.setAtlasMargin(0.05)
         map_item.setRect(0, 0, out_width, out_height)
