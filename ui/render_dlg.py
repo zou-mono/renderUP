@@ -99,6 +99,7 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
         self.cmb_block_layer.currentIndexChanged.connect(self.block_layer_changed)
         self.cmb_poi_layer.currentIndexChanged.connect(self.poi_layer_changed)
         self.cmb_metro_station_layer.currentIndexChanged.connect(self.metro_station_layer_changed)
+        self.cmb_image_layer.currentIndexChanged.connect(self.image_layer_changed)
 
         self.ckb_draw_circle.stateChanged.connect(self.enable_draw_circle)
         self.ckb_draw_northarrow.stateChanged.connect(self.enable_draw_northarrow)
@@ -114,6 +115,29 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
 
     def show(self) -> None:
         self.init_cmb_layers()
+
+        ids = [layer.id() for layer in self.project.mapLayers().values()]
+
+        image_layer_id = self.qset.value(get_qset_name('image_layer_id'))
+        if image_layer_id in ids:
+            self.cmb_image_layer.setCurrentText(self.project.mapLayer(image_layer_id).name())
+
+        metro_network_layer_id = self.qset.value(get_qset_name('metro_network_layer_id'))
+        if metro_network_layer_id in ids:
+            self.cmb_metro_network_layer.setCurrentText(self.project.mapLayer(metro_network_layer_id).name())
+
+        metro_station_layer_id = self.qset.value(get_qset_name('metro_station_layer_id'))
+        if metro_station_layer_id in ids:
+            self.cmb_metro_station_layer.setCurrentText(self.project.mapLayer(metro_station_layer_id).name())
+
+        poi_layer_id = self.qset.value(get_qset_name('poi_layer_id'))
+        if poi_layer_id in ids:
+            self.cmb_poi_layer.setCurrentText(self.project.mapLayer(poi_layer_id).name())
+
+        block_layer_id = self.qset.value(get_qset_name('block_layer_id'))
+        if block_layer_id in ids:
+            self.cmb_block_layer.setCurrentText(self.project.mapLayer(block_layer_id).name())
+
         super(renderDialog, self).show()
 
     def eventFilter(self,target,event):
@@ -162,7 +186,7 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
                     self.cmb_poi_layer.addItem(layer.name(), layer.id())
                 elif layer.type() == QgsMapLayerType.VectorLayer and node.isVisible() and \
                         layer.geometryType() == QgsWkbTypes.GeometryType.PolygonGeometry:
-                    self.cmb_block_layer.addItem("")
+                    self.cmb_block_layer.addItem(layer.name(), layer.id())
 
             # self.cmb_image_layer.addItems(layer_names_ras)
             # self.cmb_metro_network_layer.addItems(layer_names_vec_polyline)
@@ -189,21 +213,24 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
             self.cmb_poi_layer.clear()
             self.cmb_poi_layer.addItem("")
             for layer in self.project.mapLayers().values():
-                if layer.type() == QgsMapLayerType.VectorLayer:
+                node = self.project.layerTreeRoot().findLayer(layer.id())
+                if layer.type() == QgsMapLayerType.VectorLayer and node.isVisible():
                     if layer.geometryType() == QgsWkbTypes.GeometryType.PointGeometry:
                         self.cmb_poi_layer.addItem(layer.name(), layer.id())
         elif cname == 'station':
             self.cmb_metro_station_layer.clear()
             self.cmb_metro_station_layer.addItem("")
             for layer in self.project.mapLayers().values():
-                if layer.type() == QgsMapLayerType.VectorLayer:
+                node = self.project.layerTreeRoot().findLayer(layer.id())
+                if layer.type() == QgsMapLayerType.VectorLayer and node.isVisible():
                     if layer.geometryType() == QgsWkbTypes.GeometryType.PointGeometry:
                         self.cmb_metro_station_layer.addItem(layer.name(), layer.id())
         elif cname == 'block':
             self.cmb_block_layer.clear()
             self.cmb_block_layer.addItem("")
             for layer in self.project.mapLayers().values():
-                if layer.type() == QgsMapLayerType.VectorLayer:
+                node = self.project.layerTreeRoot().findLayer(layer.id())
+                if layer.type() == QgsMapLayerType.VectorLayer and node.isVisible():
                     if layer.geometryType() == QgsWkbTypes.GeometryType.PolygonGeometry:
                         self.cmb_block_layer.addItem(layer.name(), layer.id())
 
@@ -236,6 +263,13 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
         if layer is None:
             return
         self.qset.setValue(get_qset_name("metro_station_layer_id"), self.current_metro_station_layer_id)
+
+    def image_layer_changed(self, index):
+        self.current_image_layer_id = self.cmb_image_layer.itemData(index)
+        layer = self.project.mapLayer(self.current_image_layer_id)
+        if layer is None:
+            return
+        self.qset.setValue(get_qset_name("image_layer_id"), self.current_image_layer_id)
 
     def btn_default_clicked(self):
         layer_image_id = self.cmb_image_layer.itemData(self.cmb_image_layer.currentIndex())
@@ -394,7 +428,6 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
             self.qset.setValue(get_qset_name("draw_legend"), True)
         else:
             self.qset.setValue(get_qset_name("draw_legend"), False)
-
 
     def on_txt_radius_changed(self):
         if self.txt_radius.text() == "":

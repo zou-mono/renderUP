@@ -58,6 +58,7 @@ fabric.properties
 Settings.ini
 *.exe
 **/*.bak
+*.zip
 *.rar
 /res
 /image-data

@@ -156,7 +156,7 @@ def epsg_code(crs: QgsCoordinateReferenceSystem):
 
 def get_qset_name(key: str) -> str:
     section_tianditu = ["key", "random", "keyisvalid", "subdomain"]
-    section_layers = ["block_layer_id", "poi_layer_id", "metro_network_layer_id",
+    section_layers = ["image_layer_id", "block_layer_id", "poi_layer_id", "metro_network_layer_id",
                       "metro_station_layer_id", "road_network_layer_id"]
     section_settings = ["lastpath", "out_path", "out_width", "out_height", "out_resolution", "out_format"]
     section_render = ["draw_northarrow", "draw_scalebar", "draw_legend", "draw_circle", "radius"]
