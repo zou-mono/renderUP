@@ -206,19 +206,25 @@ def check_url_status(url: str) -> object:
             12: 权限类型错误
             1000: 未知错误
     """
-    res = requests.get(url, headers=HEADER, timeout=10)
     msg = {"code": 0}
-    if res.status_code == 403:
-        msg["code"] = res.json()["code"]  # 1:非法key 12:权限类型错误
-        msg["msg"] = res.json()["msg"]
-        msg["resolve"] = res.json()["resolve"]
-    elif res.status_code == 200:
-        msg["code"] = 0
-    else:
-        msg["code"] = 1000  # 未知错误
-        msg["msg"] = "未知错误 "
-        msg["resolve"] = f"错误代码:{res.status_code}"
-    return msg
+    try:
+        res = requests.get(url, headers=HEADER, timeout=10)
+        if res.status_code == 403:
+            msg["code"] = res.json()["code"]  # 1:非法key 12:权限类型错误
+            msg["msg"] = res.json()["msg"]
+            msg["resolve"] = res.json()["resolve"]
+        elif res.status_code == 200:
+            msg["code"] = 0
+        else:
+            msg["code"] = 1000  # 未知错误
+            msg["msg"] = "未知错误 "
+            msg["resolve"] = f"错误代码:{res.status_code}"
+        return msg
+    except:
+        msg["code"] = 11001  # 未知错误
+        msg["msg"] = "网络连接失败"
+        msg["resolve"] = "请检查网络连接"
+        return msg
 
 
 def check_subdomain(url: str) -> int:
@@ -230,13 +236,15 @@ def check_subdomain(url: str) -> int:
     Returns:
         int: 子域名对应的延迟数(毫秒), -1 表示连接失败
     """
-    response = requests.get(url, headers=HEADER, timeout=8)
-    if response.status_code == 200:
-        millisecond = response.elapsed.total_seconds() * 1000
-    else:
-        millisecond = -1
-    return int(millisecond)
-
+    try:
+        response = requests.get(url, headers=HEADER, timeout=8)
+        if response.status_code == 200:
+            millisecond = response.elapsed.total_seconds() * 1000
+        else:
+            millisecond = -1
+        return int(millisecond)
+    except:
+        return -1
 
 def check_subdomains(url_list: list) -> list:
     """对子域名列表进行测速

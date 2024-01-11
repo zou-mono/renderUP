@@ -256,7 +256,7 @@ class bacth_export(QgsTask):
         QgsMessageLog.logMessage(
             '任务取消: "{name}"'.format(
                 name=self.description()),
-            MESSAGE_CATEGORY, Qgis.Info)
+            MESSAGE_CATEGORY, Qgis.MessageLevel.Info)
         super().cancel()
 
     def draw_layout_mapitem(self, layout, out_width, out_height, out_resolution):
