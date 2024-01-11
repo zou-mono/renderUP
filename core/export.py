@@ -166,8 +166,8 @@ class bacth_export(QgsTask):
                         north_path = None
 
                 if north_path is not None:
-                    out_north_width = 20 if out_width / 15 < 20 else int(out_width / 15)
-                    out_north_height = 20 if out_height / 15 < 20 else int(out_height / 15)
+                    out_north_width = 20 if out_width / 10 < 20 else int(out_width / 10)
+                    out_north_height = 20 if out_height / 10 < 20 else int(out_height / 10)
 
                     north_item = QgsLayoutItemPicture(layout)
                     north_item.setPicturePath(north_path)
@@ -187,7 +187,7 @@ class bacth_export(QgsTask):
                     scalebar_item.setMaximumBarWidth(40)
                     scalebar_item.setMinimumSize(QgsLayoutSize(40, 1.5))
                     scalebar_item.setUnits(QgsUnitTypes.DistanceUnit.DistanceMeters)
-                    scalebar_item.setUnitsPerSegment(500)
+                    scalebar_item.setUnitsPerSegment(int(radius / 4))
                     scalebar_item.setHeight(out_height / 500)
                     layout.addLayoutItem(scalebar_item)
 
