@@ -9,5 +9,11 @@
         <file>icons/metro_station.svg</file>
         <file>icons/select_file.png</file>
         <file>icons/tianditu.png</file>
+        <file>icons/map_icons/amap.svg</file>
+        <file>icons/map_icons/default.svg</file>
+        <file>icons/map_icons/googlemap_default.png</file>
+        <file>icons/map_icons/googlemap_satellite.png</file>
+        <file>icons/map_icons/googlemap_terrain.png</file>
+        <file>icons/map_icons/osm.webp</file>
     </qresource>
 </RCC>

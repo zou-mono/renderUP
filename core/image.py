@@ -17,7 +17,8 @@ def get_extra_map_icon(map_data: object):
     Returns:
         QIcon: 图标
     """
-    icon_home_path = PluginDir + "/icons/map_icons/"
+    # icon_home_path = PluginDir + "/icons/map_icons/"
+    icon_home_path = ":/icons/map_icons/"
     if "icon" in map_data:
         icon = QIcon(icon_home_path + map_data["icon"])
     else:

@@ -32,17 +32,19 @@ from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
 from qgis._core import QgsMessageLog, Qgis, QgsProject, QgsMapLayerType, QgsWkbTypes, QgsSettings
 
+from .setting_style import Ui_SettingDialog
 from ..utils import PluginConfig, get_qset_name, tianditu_map_url, check_subdomains, check_key_format, PLUGIN_NAME, \
     check_url_status
 
 log = logging.getLogger('QGIS')
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
-FORM_CLASS, _ = uic.loadUiType(os.path.join(
-    os.path.dirname(__file__), 'setting_style.ui'))
+# FORM_CLASS, _ = uic.loadUiType(os.path.join(
+#     os.path.dirname(__file__), 'setting_style.ui'))
 
 
-class SettingDialog(QtWidgets.QDialog, FORM_CLASS):
+# class SettingDialog(QtWidgets.QDialog, FORM_CLASS):
+class SettingDialog(QtWidgets.QDialog, Ui_SettingDialog):
     def __init__(self, project, extra_map_action, parent=None):
         """Constructor."""
         super(SettingDialog, self).__init__(parent)

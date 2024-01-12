@@ -26,13 +26,14 @@ MESSAGE_TAG = "RenderUP"
 
 # 图标
 iconlib = {
-    "setting": QIcon(PluginDir + "/icons/setting.svg"),
-    "image": QIcon(PluginDir + "/icons/image.svg"),
-    "render": QIcon(PluginDir + "/icons/render.svg"),
-    "logo": QIcon(PluginDir + "/icons/mainlogo.svg"),
-    'export': QIcon(PluginDir + "/icons/mainlogo.svg"),
-    "tianditu": QIcon(PluginDir + "/icons/map_tianditu.svg"),
-    "extra_map": QIcon(PluginDir + "/icons/extra_map.svg")
+    # "setting": QIcon(PluginDir + "/icons/setting.svg"),
+    "setting": QIcon(":/icons/setting.svg"),
+    "image": QIcon(":/icons/image.svg"),
+    "render": QIcon(":/icons/render.svg"),
+    "logo": QIcon(":/icons/mainlogo.svg"),
+    'export': QIcon(":/icons/mainlogo.svg"),
+    "tianditu": QIcon(":/icons/map_tianditu.svg"),
+    "extra_map": QIcon(":/icons/extra_map.svg")
 }
 
 TianMapInfo = {

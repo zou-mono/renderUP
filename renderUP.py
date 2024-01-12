@@ -23,16 +23,17 @@
 """
 import pathlib, time
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QEvent
 from PyQt5.QtWidgets import QMessageBox, QMenu, QToolButton
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtWidgets import QAction
 
 # Initialize Qt resources from file resources.py
 from qgis._core import QgsProject, QgsMessageLog, Qgis, QgsSettings, QgsStyle, QgsApplication, QgsTask, QgsMapLayerType
-from qgis._gui import QgsStyleManagerDialog
+from qgis._gui import QgsStyleManagerDialog, QgisInterface
 
-from .core import export
+from .resources_rc import *
+
 from .core.export import bacth_export
 from .core.image import add_tianditu_basemap, add_extra_map, get_extra_map_icon
 from .ui.setting_dlg import SettingDialog
@@ -40,15 +41,13 @@ from .utils import iconlib, TianMapInfo, extra_maps, get_qset_name, PLUGIN_NAME,
 # Import the code for the dialog
 from .ui.render_dlg import renderDialog
 import os.path
-from .resources_rc import *
 
 # import pydevd_pycharm
 # pydevd_pycharm.settrace('localhost', port=53100, stdoutToServer=True, stderrToServer=True)
-
 class renderUP:
     """QGIS Plugin Implementation."""
 
-    def __init__(self, iface):
+    def __init__(self, iface: QgisInterface):
         """Constructor.
 
         :param iface: An interface instance that will be passed to this class
@@ -58,6 +57,8 @@ class renderUP:
         """
         # Save reference to the QGIS interface
         self.iface = iface
+        # ev = escapeEventFilter(iface.layerTreeView())
+        # iface.layerTreeView().installEventFilter(ev)
 
         # 设置工具栏
         self.toolbar = self.iface.addToolBar("编制方案渲染出图工具栏")

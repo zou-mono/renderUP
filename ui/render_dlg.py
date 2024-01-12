@@ -36,17 +36,19 @@ from qgis._core import QgsMessageLog, Qgis, QgsProject, QgsMapLayerType, QgsWkbT
     QgsVectorLayerSimpleLabeling
 from qgis._gui import QgisInterface
 
+from .render_dlg_style import Ui_renderUPDialogBase
 from ..utils import get_field_index_no_case, default_field, metro_line_color_dict, PluginDir, poi_type_color_dict, \
     get_qset_name, PLUGIN_NAME, check_crs, MESSAGE_TAG, get_default_font, PluginConfig, DefaultFont
 
 log = logging.getLogger('QGIS')
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
-FORM_CLASS, _ = uic.loadUiType(os.path.join(
-    os.path.dirname(__file__), 'render_dlg_style.ui'))
+# FORM_CLASS, _ = uic.loadUiType(os.path.join(
+#     os.path.dirname(__file__), 'render_dlg_style.ui'))
 
 
-class renderDialog(QtWidgets.QDialog, FORM_CLASS):
+# class renderDialog(QtWidgets.QDialog, FORM_CLASS):
+class renderDialog(QtWidgets.QDialog, Ui_renderUPDialogBase):
     def __init__(self, iface: QgisInterface, parent=None):
         """Constructor."""
         super(renderDialog, self).__init__(parent)
@@ -56,7 +58,7 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
         # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html
         # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
-        self.setFixedSize(QSize(480, 300))
+        self.setFixedSize(QSize(480, 250))
         self.qset = QgsSettings()
 
         self.config = PluginConfig(
@@ -113,6 +115,14 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
         self.btn_default.clicked.connect(self.btn_default_clicked)
         self.txt_radius.textChanged.connect(self.on_txt_radius_changed)
 
+        # self.btn_cancel.clicked.connect(self.btn_cancel_clicked)
+
+        # eventFilter = escapeEventFilter(self)
+        # self.installEventFilter(eventFilter)
+
+    def btn_cancel_clicked(self):
+        self.close()
+
     def show(self) -> None:
         self.init_cmb_layers()
 
@@ -152,8 +162,7 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
                 self.cmb_pressed('station')
             elif target == self.cmb_block_layer:
                 self.cmb_pressed('block')
-
-        return False
+        return super().eventFilter(target, event)
 
     def init_cmb_layers(self, cname=None):
         if self.project.mapLayers() is None:
@@ -187,13 +196,6 @@ class renderDialog(QtWidgets.QDialog, FORM_CLASS):
                 elif layer.type() == QgsMapLayerType.VectorLayer and node.isVisible() and \
                         layer.geometryType() == QgsWkbTypes.GeometryType.PolygonGeometry:
                     self.cmb_block_layer.addItem(layer.name(), layer.id())
-
-            # self.cmb_image_layer.addItems(layer_names_ras)
-            # self.cmb_metro_network_layer.addItems(layer_names_vec_polyline)
-            # self.cmb_metro_station_layer.addItems(layer_names_vec_point)
-            # self.cmb_poi_layer.addItems(layer_names_vec_point)
-            # self.cmb_block_layer.addItems(layer_names_vec_polygon)
-
         elif cname == 'image':
             self.cmb_image_layer.clear()
             self.cmb_image_layer.addItem("")

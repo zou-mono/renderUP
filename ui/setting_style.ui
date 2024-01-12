@@ -155,8 +155,8 @@
              <string/>
             </property>
             <property name="icon">
-             <iconset>
-              <normaloff>../icons/select_file.png</normaloff>../icons/select_file.png</iconset>
+             <iconset resource="../resources.qrc">
+              <normaloff>:/icons/select_file.png</normaloff>:/icons/select_file.png</iconset>
             </property>
            </widget>
           </item>
@@ -329,6 +329,8 @@
    <header>qgspasswordlineedit.h</header>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="../resources.qrc"/>
+ </resources>
  <connections/>
 </ui>
