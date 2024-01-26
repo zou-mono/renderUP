@@ -104,8 +104,13 @@ class bacth_export(QgsTask):
             ifeat = 1
             total_num = self.block_layer.featureCount()
 
+            proj_id = self.project.crs().authid()
             if self.project.crs().isGeographic():
                 self.project.setCrs(QgsCoordinateReferenceSystem("EPSG:3857"))
+            # if proj_id == "EPSG:4326":
+            #     self.project.setCrs(QgsCoordinateReferenceSystem("EPSG:3857"))
+            # elif proj_id == "EPSG:4490":
+            #     self.project.setCrs(QgsCoordinateReferenceSystem("EPSG:4547"))
 
             for feature in self.block_layer.getFeatures():
                 fea_id = str(feature.id())
@@ -129,7 +134,8 @@ class bacth_export(QgsTask):
                 map_item = self.draw_layout_mapitem(layout, out_width, out_height, out_resolution)
 
                 if self.block_layer.crs().isValid():
-                    if self.block_layer.crs().isGeographic():
+                    # if self.block_layer.crs().isGeographic():
+                    if self.block_layer.crs().authid() != "EPSG:3857":
                         sourceCrs = QgsCoordinateReferenceSystem(f"EPSG:{epsg_code(self.block_layer.crs())}")
                         destCrs = QgsCoordinateReferenceSystem(f"EPSG:{epsg_code(self.project.crs())}")
                         tr = QgsCoordinateTransform(sourceCrs, destCrs, self.project)
@@ -142,8 +148,8 @@ class bacth_export(QgsTask):
                     #     geom.transform(tr)
 
                 centroid = geom.pointOnSurface().asPoint()
-                # QgsMessageLog.logMessage("中心点坐标:{},{}".format(centroid.x(), centroid.y()), tag="Plugins",
-                #                          level=Qgis.MessageLevel.Info)
+                QgsMessageLog.logMessage("中心点坐标:{},{}".format(centroid.x(), centroid.y()), tag="Plugins",
+                                         level=Qgis.MessageLevel.Info)
                 extent = QgsRectangle.fromCenterAndSize(centroid, 2 * radius, 2 * radius)
                 extent.scale(1.2)
                 map_item.zoomToExtent(extent)
