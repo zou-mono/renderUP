@@ -6,6 +6,7 @@ import traceback
 from PyQt5.QtCore import QTimer, QSize, QSizeF, QPoint, Qt, QPointF, QThread, pyqtSignal, QEvent
 from PyQt5.QtGui import QPainter, QImage, QColor, QFont
 from PyQt5.QtWidgets import QMessageBox
+from osgeo.osr import SpatialReference
 from qgis.PyQt import QtCore
 from qgis._core import QgsMapSettings, QgsSettings, QgsProject, QgsMessageLog, Qgis, QgsMapLayerType, \
     QgsMapRendererCustomPainterJob, QgsMapRendererParallelJob, QgsMapRendererSequentialJob, QgsPrintLayout, \
@@ -102,6 +103,10 @@ class bacth_export(QgsTask):
 
             ifeat = 1
             total_num = self.block_layer.featureCount()
+
+            if self.project.crs().isGeographic():
+                self.project.setCrs(QgsCoordinateReferenceSystem("EPSG:3857"))
+
             for feature in self.block_layer.getFeatures():
                 fea_id = str(feature.id())
                 geom = feature.geometry()
@@ -124,14 +129,21 @@ class bacth_export(QgsTask):
                 map_item = self.draw_layout_mapitem(layout, out_width, out_height, out_resolution)
 
                 if self.block_layer.crs().isValid():
-                    sourceCrs = QgsCoordinateReferenceSystem(epsg_code(self.block_layer.crs()))
-                    destCrs = QgsCoordinateReferenceSystem(epsg_code(self.project.crs()))
-
-                    if sourceCrs != destCrs:
+                    if self.block_layer.crs().isGeographic():
+                        sourceCrs = QgsCoordinateReferenceSystem(f"EPSG:{epsg_code(self.block_layer.crs())}")
+                        destCrs = QgsCoordinateReferenceSystem(f"EPSG:{epsg_code(self.project.crs())}")
                         tr = QgsCoordinateTransform(sourceCrs, destCrs, self.project)
                         geom.transform(tr)
+                    # sourceCrs = QgsCoordinateReferenceSystem(epsg_code(self.block_layer.crs()))
+                    # destCrs = QgsCoordinateReferenceSystem(epsg_code(self.project.crs()))
+                    #
+                    # if sourceCrs != destCrs:
+                    #     tr = QgsCoordinateTransform(sourceCrs, destCrs, self.project)
+                    #     geom.transform(tr)
 
-                centroid = feature.geometry().pointOnSurface().asPoint()
+                centroid = geom.pointOnSurface().asPoint()
+                QgsMessageLog.logMessage("中心点坐标:{},{}".format(centroid.x(), centroid.y()), tag="Plugins",
+                                         level=Qgis.MessageLevel.Info)
                 extent = QgsRectangle.fromCenterAndSize(centroid, 2 * radius, 2 * radius)
                 extent.scale(1.2)
                 map_item.zoomToExtent(extent)
@@ -273,7 +285,7 @@ class bacth_export(QgsTask):
         map_item.mapSettings(self.iface.mapCanvas().extent(), QSizeF(out_width, out_height), dpi=out_resolution, includeLayerSettings=True)
         # map.setAtlasMargin(0.05)
         map_item.setRect(0, 0, out_width, out_height)
-        # map.zoomToExtent(self.iface.mapCanvas().extent())
+        map_item.zoomToExtent(self.iface.mapCanvas().extent())
         map_item.setBackgroundColor(QColor(255, 255, 255, 0))
         layout.addLayoutItem(map_item)
 

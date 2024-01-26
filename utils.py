@@ -33,7 +33,8 @@ iconlib = {
     "logo": QIcon(":/icons/mainlogo.svg"),
     'export': QIcon(":/icons/mainlogo.svg"),
     "tianditu": QIcon(":/icons/map_tianditu.svg"),
-    "extra_map": QIcon(":/icons/extra_map.svg")
+    "extra_map": QIcon(":/icons/extra_map.svg"),
+    "metro_station": QIcon(":/icons/metro_station.svg"),
 }
 
 TianMapInfo = {
