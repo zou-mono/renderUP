@@ -142,8 +142,8 @@ class bacth_export(QgsTask):
                     #     geom.transform(tr)
 
                 centroid = geom.pointOnSurface().asPoint()
-                QgsMessageLog.logMessage("中心点坐标:{},{}".format(centroid.x(), centroid.y()), tag="Plugins",
-                                         level=Qgis.MessageLevel.Info)
+                # QgsMessageLog.logMessage("中心点坐标:{},{}".format(centroid.x(), centroid.y()), tag="Plugins",
+                #                          level=Qgis.MessageLevel.Info)
                 extent = QgsRectangle.fromCenterAndSize(centroid, 2 * radius, 2 * radius)
                 extent.scale(1.2)
                 map_item.zoomToExtent(extent)
@@ -158,7 +158,7 @@ class bacth_export(QgsTask):
                     ele_circle.setSymbol(circle_symbol)
                     layout.addLayoutItem(ele_circle)
 
-                    layout_centroid = map_item.mapToItemCoords(QPoint(centroid.x(), centroid.y()))
+                    layout_centroid = map_item.mapToItemCoords(QPointF(centroid.x(), centroid.y()))
                     layout_radius = self.layout_length(map_item, radius, centroid)
 
                     ele_circle.attemptMove(QgsLayoutPoint(layout_centroid.x(), layout_centroid.y(), QgsUnitTypes.LayoutUnit.LayoutMillimeters))
@@ -295,9 +295,9 @@ class bacth_export(QgsTask):
         return map_item
 
     def layout_length(self, map_item, length, start_pt):
-        layout_start_pt = map_item.mapToItemCoords(QPoint(start_pt.x(), start_pt.y()))
+        layout_start_pt = map_item.mapToItemCoords(QPointF(start_pt.x(), start_pt.y()))
         map_length = self.convert_distance(length)
-        layout_end_pt = map_item.mapToItemCoords(QPoint(start_pt.x() + map_length, start_pt.y()))
+        layout_end_pt = map_item.mapToItemCoords(QPointF(start_pt.x() + map_length, start_pt.y()))
         return layout_end_pt.x() - layout_start_pt.x()
 
     def convert_distance(self, distance):
