@@ -1,10 +1,11 @@
+import math
 import os.path
 import random
 import time
 import traceback
 
-from PyQt5.QtCore import QTimer, QSize, QSizeF, QPoint, Qt, QPointF, QThread, pyqtSignal, QEvent
-from PyQt5.QtGui import QPainter, QImage, QColor, QFont
+from PyQt5.QtCore import QTimer, QSize, QSizeF, QPoint, Qt, QPointF, QEvent
+from PyQt5.QtGui import QPainter, QImage, QColor, QFont, QTextFormat
 from PyQt5.QtWidgets import QMessageBox
 from osgeo.osr import SpatialReference
 from qgis.PyQt import QtCore
@@ -14,11 +15,11 @@ from qgis._core import QgsMapSettings, QgsSettings, QgsProject, QgsMessageLog, Q
     QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsDistanceArea, QgsCoordinateTransformContext, \
     QgsLayoutItemShape, QgsSimpleFillSymbolLayer, QgsFillSymbol, QgsLayoutItem, QgsMapToPixel, QgsTask, QgsApplication, \
     QgsLayoutItemPicture, QgsLayoutItemScaleBar, QgsScaleBarSettings, QgsLayoutItemLegend, QgsLegendStyle, QgsLayerTree, \
-    QgsLegendRenderer
+    QgsLegendRenderer, QgsTextFormat
 from qgis._gui import QgisInterface
 
 from ..utils import get_qset_name, get_field_index_no_case, default_field, ExportDir, epsg_code, PluginConfig, \
-    MESSAGE_TAG, IconDir, DefaultFont
+    MESSAGE_TAG, IconDir, DefaultFont, default_scalebar_size, default_diag
 
 
 class escapeEventFilter(QtCore.QObject):
@@ -81,6 +82,11 @@ class bacth_export(QgsTask):
         radius = self.config.radius
         out_path = os.path.join(self.config.out_path)
 
+        out_diag = math.sqrt(out_width ** 2 + out_height ** 2)
+        scalebar_size = int(out_diag * default_scalebar_size * 72 / out_resolution)
+        QgsMessageLog.logMessage("大小:{}".format(scalebar_size), tag="Plugins",
+                                 level=Qgis.MessageLevel.Info)
+
         try:
             metro_station_layer_id = self.qset.value(get_qset_name("metro_station_layer_id"))
             poi_layer_id = self.qset.value(get_qset_name("poi_layer_id"))
@@ -131,7 +137,8 @@ class bacth_export(QgsTask):
                 for layout in layouts_list:
                     if layout.name() == layoutName:
                         manager.removeLayout(layout)
-                layout = QgsPrintLayout(QgsProject.instance())
+
+                layout = QgsPrintLayout(self.project)
                 layout.initializeDefaults()
                 layout.setName(layoutName)
                 self.project.layoutManager().addLayout(layout)
@@ -153,8 +160,8 @@ class bacth_export(QgsTask):
                     #     geom.transform(tr)
 
                 centroid = geom.pointOnSurface().asPoint()
-                QgsMessageLog.logMessage("中心点坐标:{},{}".format(centroid.x(), centroid.y()), tag="Plugins",
-                                         level=Qgis.MessageLevel.Info)
+                # QgsMessageLog.logMessage("中心点坐标:{},{}".format(centroid.x(), centroid.y()), tag="Plugins",
+                #                          level=Qgis.MessageLevel.Info)
                 extent = QgsRectangle.fromCenterAndSize(centroid, 2 * radius, 2 * radius)
                 extent.scale(1.2)
                 map_item.zoomToExtent(extent)
@@ -199,6 +206,13 @@ class bacth_export(QgsTask):
                     scalebar_item.setStyle("Line Ticks Up")
                     scalebar_item.attemptMove(QgsLayoutPoint(int(1 * out_width / 19), int(16 * out_height / 19), QgsUnitTypes.LayoutUnit.LayoutPixels))
                     scalebar_item.setUnitLabel("米")
+
+                    tf = QgsTextFormat()
+                    tf.setFont(QFont(DefaultFont))
+                    tf.setSize(scalebar_size)
+                    scalebar_item.setTextFormat(tf)
+                    scalebar_item.setLabelBarSpace(1)  # 文字和标尺的空间，单位毫米
+
                     scalebar_item.setSegmentSizeMode(QgsScaleBarSettings.SegmentSizeMode.SegmentSizeFixed)
                     scalebar_item.setNumberOfSegmentsLeft(0)
                     scalebar_item.setNumberOfSegments(2)
@@ -207,6 +221,7 @@ class bacth_export(QgsTask):
                     scalebar_item.setUnits(QgsUnitTypes.DistanceUnit.DistanceMeters)
                     scalebar_item.setUnitsPerSegment(int(radius / 4))
                     scalebar_item.setHeight(out_height / 500)
+
                     layout.addLayoutItem(scalebar_item)
 
                 if draw_legend:

@@ -98,6 +98,12 @@ class default_field:
     name_poi = 'name'
     name_block = 'landid'
 
+#  地铁站点为标准， 2529*1829 150分辨率 对角线3450像素=584.2毫米 地铁站点大小12毫米 大约6磅
+default_diag = 3450
+default_metro_station_size = 12 / 584
+#  比例尺字体 单位磅
+default_scalebar_size = default_metro_station_size / 1.5
+
 
 EXTRAMAPS_PATH = os.path.join(PluginDir, "extramaps.yml")
 with open(EXTRAMAPS_PATH, encoding="utf-8") as f:
