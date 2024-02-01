@@ -84,6 +84,8 @@ class bacth_export(QgsTask):
 
         out_diag = math.sqrt(out_width ** 2 + out_height ** 2)
         scalebar_size = int(out_diag * default_scalebar_size * 72 / out_resolution)
+        legend_title_size = int(scalebar_size * 1.5)
+        legend_label_size = int(legend_title_size * 0.8)
         # QgsMessageLog.logMessage("大小:{}".format(scalebar_size), tag="Plugins",
         #                          level=Qgis.MessageLevel.Info)
 
@@ -251,15 +253,18 @@ class bacth_export(QgsTask):
                     legend_item = QgsLayoutItemLegend(layout)
                     legend_item.setLinkedMap(map_item)
                     title_style = QgsLegendStyle()
-                    font = QFont(DefaultFont, 12)
+                    font = QFont(DefaultFont, legend_title_size)
                     font.setBold(True)
                     title_style.setFont(font)
                     legend_item.setStyle(QgsLegendStyle.Style.Title, title_style)
                     legend_item.setTitle("图例")
 
                     symbol_label_style = QgsLegendStyle()
-                    symbol_label_style.setFont(QFont(DefaultFont, 10, 1, False))
+                    symbol_label_style.setFont(QFont(DefaultFont, legend_label_size, 1, False))
                     legend_item.setStyle(QgsLegendStyle.Style.SymbolLabel, symbol_label_style)
+
+                    legend_item.rstyle(QgsLegendStyle.Style.Symbol).setMargin(QgsLegendStyle.Side.Top, 0.3)
+                    legend_item.rstyle(QgsLegendStyle.Style.Title).setMargin(QgsLegendStyle.Side.Bottom, 1)
 
                     legend_item.setLegendFilterByMapEnabled(True)
                     legend_item.setAutoUpdateModel(autoUpdate=False)

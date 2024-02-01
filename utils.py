@@ -113,6 +113,8 @@ default_poi_size = default_metro_station_size / 2
 default_poi_width = default_metro_station_size / 12
 #  默认地块outline宽度
 default_block_outline_width = default_metro_station_size / 6
+#  默认图例标题大小
+default_legend_title_size = default_metro_station_size
 
 EXTRAMAPS_PATH = os.path.join(PluginDir, "extramaps.yml")
 with open(EXTRAMAPS_PATH, encoding="utf-8") as f:
