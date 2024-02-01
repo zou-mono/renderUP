@@ -107,10 +107,17 @@ class bacth_export(QgsTask):
             proj_id = self.project.crs().authid()
             if self.project.crs().isGeographic():
                 self.project.setCrs(QgsCoordinateReferenceSystem("EPSG:3857"))
-            # if proj_id == "EPSG:4326":
-            #     self.project.setCrs(QgsCoordinateReferenceSystem("EPSG:3857"))
-            # elif proj_id == "EPSG:4490":
-            #     self.project.setCrs(QgsCoordinateReferenceSystem("EPSG:4547"))
+
+            bTransfer = False
+            geom_tr = None
+            if self.block_layer.crs().isValid():
+                if self.block_layer.crs().isGeographic():
+                    sourceCrs = QgsCoordinateReferenceSystem(f"EPSG:{epsg_code(self.block_layer.crs())}")
+                    destCrs = QgsCoordinateReferenceSystem(f"EPSG:{epsg_code(self.project.crs())}")
+                    geom_tr = QgsCoordinateTransform(sourceCrs, destCrs, self.project)
+                    bTransfer = True
+            else:
+                raise Exception("地块图层坐标系统不符合标准.")
 
             for feature in self.block_layer.getFeatures():
                 fea_id = str(feature.id())
@@ -133,13 +140,11 @@ class bacth_export(QgsTask):
 
                 map_item = self.draw_layout_mapitem(layout, out_width, out_height, out_resolution)
 
-                if self.block_layer.crs().isValid():
-                    # if self.block_layer.crs().isGeographic():
-                    if self.block_layer.crs().authid() != "EPSG:3857":
-                        sourceCrs = QgsCoordinateReferenceSystem(f"EPSG:{epsg_code(self.block_layer.crs())}")
-                        destCrs = QgsCoordinateReferenceSystem(f"EPSG:{epsg_code(self.project.crs())}")
-                        tr = QgsCoordinateTransform(sourceCrs, destCrs, self.project)
-                        geom.transform(tr)
+                # if self.block_layer.crs().isValid():
+                #     # if self.block_layer.crs().isGeographic():
+                #     if self.block_layer.crs().authid() != "EPSG:3857":
+                if bTransfer:
+                    geom.transform(geom_tr)
                     # sourceCrs = QgsCoordinateReferenceSystem(epsg_code(self.block_layer.crs()))
                     # destCrs = QgsCoordinateReferenceSystem(epsg_code(self.project.crs()))
                     #
@@ -188,65 +193,65 @@ class bacth_export(QgsTask):
                         north_item.attemptResize(QgsLayoutSize(out_north_width, out_north_height, QgsUnitTypes.LayoutUnit.LayoutPixels))
                         north_item.attemptMove(QgsLayoutPoint(int(17 * out_width / 19), int(2 * out_height / 19), QgsUnitTypes.LayoutUnit.LayoutPixels))
 
-                    if draw_scalebar:
-                        scalebar_item = QgsLayoutItemScaleBar(layout)
-                        scalebar_item.setLinkedMap(map_item)
-                        scalebar_item.setStyle("Line Ticks Up")
-                        scalebar_item.attemptMove(QgsLayoutPoint(int(1 * out_width / 19), int(16 * out_height / 19), QgsUnitTypes.LayoutUnit.LayoutPixels))
-                        scalebar_item.setUnitLabel("米")
-                        scalebar_item.setSegmentSizeMode(QgsScaleBarSettings.SegmentSizeMode.SegmentSizeFixed)
-                        scalebar_item.setNumberOfSegmentsLeft(0)
-                        scalebar_item.setNumberOfSegments(2)
-                        scalebar_item.setMaximumBarWidth(40)
-                        scalebar_item.setMinimumSize(QgsLayoutSize(40, 1.5))
-                        scalebar_item.setUnits(QgsUnitTypes.DistanceUnit.DistanceMeters)
-                        scalebar_item.setUnitsPerSegment(int(radius / 4))
-                        scalebar_item.setHeight(out_height / 500)
-                        layout.addLayoutItem(scalebar_item)
+                if draw_scalebar:
+                    scalebar_item = QgsLayoutItemScaleBar(layout)
+                    scalebar_item.setLinkedMap(map_item)
+                    scalebar_item.setStyle("Line Ticks Up")
+                    scalebar_item.attemptMove(QgsLayoutPoint(int(1 * out_width / 19), int(16 * out_height / 19), QgsUnitTypes.LayoutUnit.LayoutPixels))
+                    scalebar_item.setUnitLabel("米")
+                    scalebar_item.setSegmentSizeMode(QgsScaleBarSettings.SegmentSizeMode.SegmentSizeFixed)
+                    scalebar_item.setNumberOfSegmentsLeft(0)
+                    scalebar_item.setNumberOfSegments(2)
+                    scalebar_item.setMaximumBarWidth(40)
+                    scalebar_item.setMinimumSize(QgsLayoutSize(40, 1.5))
+                    scalebar_item.setUnits(QgsUnitTypes.DistanceUnit.DistanceMeters)
+                    scalebar_item.setUnitsPerSegment(int(radius / 4))
+                    scalebar_item.setHeight(out_height / 500)
+                    layout.addLayoutItem(scalebar_item)
 
-                    if draw_legend:
-                        legend_item = QgsLayoutItemLegend(layout)
-                        legend_item.setLinkedMap(map_item)
-                        title_style = QgsLegendStyle()
-                        font = QFont(DefaultFont, 12)
-                        font.setBold(True)
-                        title_style.setFont(font)
-                        legend_item.setStyle(QgsLegendStyle.Style.Title, title_style)
-                        legend_item.setTitle("图例")
+                if draw_legend:
+                    legend_item = QgsLayoutItemLegend(layout)
+                    legend_item.setLinkedMap(map_item)
+                    title_style = QgsLegendStyle()
+                    font = QFont(DefaultFont, 12)
+                    font.setBold(True)
+                    title_style.setFont(font)
+                    legend_item.setStyle(QgsLegendStyle.Style.Title, title_style)
+                    legend_item.setTitle("图例")
 
-                        symbol_label_style = QgsLegendStyle()
-                        symbol_label_style.setFont(QFont(DefaultFont, 10, 1, False))
-                        legend_item.setStyle(QgsLegendStyle.Style.SymbolLabel, symbol_label_style)
+                    symbol_label_style = QgsLegendStyle()
+                    symbol_label_style.setFont(QFont(DefaultFont, 10, 1, False))
+                    legend_item.setStyle(QgsLegendStyle.Style.SymbolLabel, symbol_label_style)
 
-                        legend_item.setLegendFilterByMapEnabled(True)
-                        legend_item.setAutoUpdateModel(autoUpdate=False)
-                        group = legend_item.model().rootGroup()
-                        # group.clear()
-                        legend_item.model().setRootGroup(group)
+                    legend_item.setLegendFilterByMapEnabled(True)
+                    legend_item.setAutoUpdateModel(autoUpdate=False)
+                    group = legend_item.model().rootGroup()
+                    # group.clear()
+                    legend_item.model().setRootGroup(group)
 
-                        for tr in group.children():
-                            if tr.layerId() == checked_layer_ids["轨道站点"]:
-                                tr.setCustomProperty("legend/title-label", "轨道站点")
-                            elif tr.layerId() == checked_layer_ids["POI"]:
-                                tr.setCustomProperty("legend/title-label", "POI")
-                                QgsLegendRenderer.setNodeLegendStyle(tr, QgsLegendStyle.Style.Hidden)
-                            else:
-                                group.removeLayer(self.project.mapLayer(tr.layerId()))
+                    for tr in group.children():
+                        if tr.layerId() == checked_layer_ids["轨道站点"]:
+                            tr.setCustomProperty("legend/title-label", "轨道站点")
+                        elif tr.layerId() == checked_layer_ids["POI"]:
+                            tr.setCustomProperty("legend/title-label", "POI")
+                            QgsLegendRenderer.setNodeLegendStyle(tr, QgsLegendStyle.Style.Hidden)
+                        else:
+                            group.removeLayer(self.project.mapLayer(tr.layerId()))
 
-                        # root = QgsLayerTree()
-                        # for l_name, l_id in checked_layer_ids.items():
-                        #     tree_layer = root.addLayer(QgsProject.instance().mapLayer(l_id))
-                        #     tree_layer.setUseLayerName(False)
-                        #     tree_layer.setName(l_name)
-                        #     setattr(root, l_name, QgsLayerTree())
+                    # root = QgsLayerTree()
+                    # for l_name, l_id in checked_layer_ids.items():
+                    #     tree_layer = root.addLayer(QgsProject.instance().mapLayer(l_id))
+                    #     tree_layer.setUseLayerName(False)
+                    #     tree_layer.setName(l_name)
+                    #     setattr(root, l_name, QgsLayerTree())
 
-                        # legend_item.updateLegend()
-                        legend_item.model().setRootGroup(group)
-                        legend_item.setBackgroundColor(QColor(255, 255, 255, 60))
-                        # legend_item.updateLegend()
-                        legend_item.adjustBoxSize()
-                        legend_item.refresh()
-                        layout.addLayoutItem(legend_item)
+                    # legend_item.updateLegend()
+                    legend_item.model().setRootGroup(group)
+                    legend_item.setBackgroundColor(QColor(255, 255, 255, 153))
+                    # legend_item.updateLegend()
+                    legend_item.adjustBoxSize()
+                    legend_item.refresh()
+                    layout.addLayoutItem(legend_item)
 
                 self.project.write(project_name)
 
