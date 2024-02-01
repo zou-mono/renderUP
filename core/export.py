@@ -167,13 +167,13 @@ class bacth_export(QgsTask):
                     ele_circle.setShapeType(QgsLayoutItemShape.Shape.Ellipse)
                     ele_circle.setReferencePoint(QgsLayoutItem.ReferencePoint.Middle)
                     ele_circle.setSymbol(circle_symbol)
-                    layout.addLayoutItem(ele_circle)
 
                     layout_centroid = map_item.mapToItemCoords(QPointF(centroid.x(), centroid.y()))
                     layout_radius = self.layout_length(map_item, radius, centroid)
 
                     ele_circle.attemptMove(QgsLayoutPoint(layout_centroid.x(), layout_centroid.y(), QgsUnitTypes.LayoutUnit.LayoutMillimeters))
                     ele_circle.setFixedSize(QgsLayoutSize(2 * layout_radius, 2 * layout_radius))
+                    layout.addLayoutItem(ele_circle)
 
                 if draw_northarrow:
                     north_path = os.path.join(IconDir, "north_arrow.svg")
