@@ -95,6 +95,11 @@ class bacth_export(QgsTask):
                 "POI": poi_layer_id
             }
 
+            lyrsToRemove = [l for l in self.project.mapLayers() if l not in list(checked_layer_ids.values())]
+
+            # QgsMessageLog.logMessage(str(self.project.mapLayers()), tag="Plugins",
+            #                          level=Qgis.MessageLevel.Info)
+
             circle_symbol_layer = QgsSimpleFillSymbolLayer.create({
                 'outline_color': "64,64,64,77",
                 'color': '0,0,0,0',
@@ -106,9 +111,6 @@ class bacth_export(QgsTask):
             circle_symbol.changeSymbolLayer(0, circle_symbol_layer)
 
             # lyrs_exist = [l for l in QgsProject().instance().layerTreeRoot().children() if l.isVisible()]
-
-            ifeat = 1
-            total_num = self.block_layer.featureCount()
 
             proj_id = self.project.crs().authid()
             if self.project.crs().isGeographic():
@@ -125,8 +127,29 @@ class bacth_export(QgsTask):
             else:
                 raise Exception("地块图层坐标系统不符合标准.")
 
-            for feature in self.block_layer.getFeatures():
-                fea_id = str(feature.id())
+            self.block_layer.setSubsetString("")
+            fids = []
+            for fea in self.block_layer.getFeatures():
+                fids.append(fea.id())
+
+            ifeat = 1
+            total_num = self.block_layer.featureCount()
+
+            fid_name = self.get_key_column()
+
+            # for feature in self.block_layer.getFeatures():
+            for fea_id in fids:
+                bflag = self.block_layer.setSubsetString("{}={}".format(fid_name, fea_id))
+                # fea_id = str(feature.id())
+                if not bflag:
+                    QgsMessageLog.logMessage("fid{}不存在".format(fea_id), tag="Plugins",
+                                             level=Qgis.MessageLevel.Warning)
+                    self.setProgress(float(ifeat * 100 / total_num))
+                    ifeat += 1
+                    continue
+
+                feature = next(self.block_layer.getFeatures())
+
                 geom = feature.geometry()
                 project_name = os.path.join(out_path, "project_files", f"{fea_id}.qgs")
 
@@ -160,8 +183,8 @@ class bacth_export(QgsTask):
                     #     geom.transform(tr)
 
                 centroid = geom.pointOnSurface().asPoint()
-                QgsMessageLog.logMessage("中心点坐标:{},{}".format(centroid.x(), centroid.y()), tag="Plugins",
-                                         level=Qgis.MessageLevel.Info)
+                # QgsMessageLog.logMessage("中心点坐标:{},{}".format(centroid.x(), centroid.y()), tag="Plugins",
+                #                          level=Qgis.MessageLevel.Info)
                 extent = QgsRectangle.fromCenterAndSize(centroid, 2 * radius, 2 * radius)
                 extent.scale(1.2)
                 map_item.zoomToExtent(extent)
@@ -240,18 +263,20 @@ class bacth_export(QgsTask):
 
                     legend_item.setLegendFilterByMapEnabled(True)
                     legend_item.setAutoUpdateModel(autoUpdate=False)
-                    group = legend_item.model().rootGroup()
+                    m = legend_item.model()
+                    root = m.rootGroup()
                     # group.clear()
-                    legend_item.model().setRootGroup(group)
+                    legend_item.model().setRootGroup(root)
 
-                    for tr in group.children():
+                    for tr in root.children():
                         if tr.layerId() == checked_layer_ids["轨道站点"]:
                             tr.setCustomProperty("legend/title-label", "轨道站点")
                         elif tr.layerId() == checked_layer_ids["POI"]:
                             tr.setCustomProperty("legend/title-label", "POI")
                             QgsLegendRenderer.setNodeLegendStyle(tr, QgsLegendStyle.Style.Hidden)
-                        else:
-                            group.removeLayer(self.project.mapLayer(tr.layerId()))
+
+                    for lr in lyrsToRemove:
+                        root.removeLayer(self.project.mapLayer(lr))
 
                     # root = QgsLayerTree()
                     # for l_name, l_id in checked_layer_ids.items():
@@ -261,7 +286,7 @@ class bacth_export(QgsTask):
                     #     setattr(root, l_name, QgsLayerTree())
 
                     # legend_item.updateLegend()
-                    legend_item.model().setRootGroup(group)
+                    legend_item.model().setRootGroup(root)
                     legend_item.setBackgroundColor(QColor(255, 255, 255, 153))
                     # legend_item.updateLegend()
                     legend_item.adjustBoxSize()
@@ -335,3 +360,9 @@ class bacth_export(QgsTask):
         res = d.convertLengthMeasurement(distance, self.project.distanceUnits())
         return res
 
+    def get_key_column(self):
+        key_list = self.block_layer.primaryKeyAttributes()
+        if len(key_list) > 0:
+            return key_list[0]
+        else:
+            return "fid"
