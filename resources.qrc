@@ -15,5 +15,6 @@
         <file>icons/map_icons/googlemap_satellite.png</file>
         <file>icons/map_icons/googlemap_terrain.png</file>
         <file>icons/map_icons/osm.webp</file>
+        <file>icons/map_icons/ESRI.webp</file>
     </qresource>
 </RCC>
