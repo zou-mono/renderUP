@@ -84,8 +84,8 @@ class bacth_export(QgsTask):
 
         out_diag = math.sqrt(out_width ** 2 + out_height ** 2)
         scalebar_size = int(out_diag * default_scalebar_size * 72 / out_resolution)
-        QgsMessageLog.logMessage("大小:{}".format(scalebar_size), tag="Plugins",
-                                 level=Qgis.MessageLevel.Info)
+        # QgsMessageLog.logMessage("大小:{}".format(scalebar_size), tag="Plugins",
+        #                          level=Qgis.MessageLevel.Info)
 
         try:
             metro_station_layer_id = self.qset.value(get_qset_name("metro_station_layer_id"))
@@ -117,7 +117,7 @@ class bacth_export(QgsTask):
             bTransfer = False
             geom_tr = None
             if self.block_layer.crs().isValid():
-                if self.block_layer.crs().isGeographic():
+                if self.block_layer.crs().authid() != "EPSG:3857":
                     sourceCrs = QgsCoordinateReferenceSystem(f"EPSG:{epsg_code(self.block_layer.crs())}")
                     destCrs = QgsCoordinateReferenceSystem(f"EPSG:{epsg_code(self.project.crs())}")
                     geom_tr = QgsCoordinateTransform(sourceCrs, destCrs, self.project)
@@ -160,8 +160,8 @@ class bacth_export(QgsTask):
                     #     geom.transform(tr)
 
                 centroid = geom.pointOnSurface().asPoint()
-                # QgsMessageLog.logMessage("中心点坐标:{},{}".format(centroid.x(), centroid.y()), tag="Plugins",
-                #                          level=Qgis.MessageLevel.Info)
+                QgsMessageLog.logMessage("中心点坐标:{},{}".format(centroid.x(), centroid.y()), tag="Plugins",
+                                         level=Qgis.MessageLevel.Info)
                 extent = QgsRectangle.fromCenterAndSize(centroid, 2 * radius, 2 * radius)
                 extent.scale(1.2)
                 map_item.zoomToExtent(extent)

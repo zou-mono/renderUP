@@ -103,7 +103,16 @@ default_diag = 3450
 default_metro_station_size = 12 / 584
 #  比例尺字体 单位磅
 default_scalebar_size = default_metro_station_size / 1.5
-
+#  默认label字体大小
+default_label_size = default_metro_station_size / 3
+#  默认轨道线宽
+default_metro_network_width = default_metro_station_size / 6
+#  默认poi大小
+default_poi_size = default_metro_station_size / 2
+#  默认poi outline宽度
+default_poi_width = default_metro_station_size / 12
+#  默认地块outline宽度
+default_block_outline_width = default_metro_station_size / 6
 
 EXTRAMAPS_PATH = os.path.join(PluginDir, "extramaps.yml")
 with open(EXTRAMAPS_PATH, encoding="utf-8") as f:

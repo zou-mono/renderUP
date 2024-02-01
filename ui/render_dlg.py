@@ -23,6 +23,7 @@
 """
 import logging
 import os
+import math
 
 from PyQt5.QtCore import QEvent, QSize, QRegularExpression
 from PyQt5.QtGui import QRegularExpressionValidator, QColor, QFont
@@ -38,7 +39,8 @@ from qgis._gui import QgisInterface
 
 from .render_dlg_style import Ui_renderUPDialogBase
 from ..utils import get_field_index_no_case, default_field, metro_line_color_dict, PluginDir, poi_type_color_dict, \
-    get_qset_name, PLUGIN_NAME, check_crs, MESSAGE_TAG, get_default_font, PluginConfig, DefaultFont
+    get_qset_name, PLUGIN_NAME, check_crs, MESSAGE_TAG, get_default_font, PluginConfig, DefaultFont, default_label_size, \
+    default_diag, default_metro_station_size, default_poi_size, default_block_outline_width
 
 log = logging.getLogger('QGIS')
 
@@ -280,10 +282,18 @@ class renderDialog(QtWidgets.QDialog, Ui_renderUPDialogBase):
         layer_poi_id = self.cmb_poi_layer.itemData(self.cmb_poi_layer.currentIndex())
         layer_block_id = self.cmb_block_layer.itemData(self.cmb_block_layer.currentIndex())
 
+        out_width = float(self.qset.value(get_qset_name("out_width")))
+        out_height = float(self.qset.value(get_qset_name("out_height")))
+        out_resolution = float(self.qset.value(get_qset_name("out_resolution")))
+
+        out_diag = math.sqrt(out_width ** 2 + out_height ** 2)
+        label_size = int(out_diag * default_label_size * 72 / out_resolution)
+        metro_station_size = out_diag * default_metro_station_size
+
         self.render_mertro_network(layer_metro_network_id)
-        self.render_metro_station(layer_metro_station_id)
-        self.render_poi(layer_poi_id)
-        self.render_block(layer_block_id)
+        self.render_metro_station(layer_metro_station_id, int(metro_station_size), int(label_size * 1.5))
+        self.render_poi(layer_poi_id, int(out_diag * default_poi_size), label_size)
+        self.render_block(layer_block_id, int(out_diag * default_block_outline_width))
         self.render_image(layer_image_id)
 
     def render_image(self, layer_image_id):
@@ -293,21 +303,21 @@ class renderDialog(QtWidgets.QDialog, Ui_renderUPDialogBase):
             layer.triggerRepaint()
             self.iface.layerTreeView().refreshLayerSymbology(layer.id())
 
-    def render_block(self, layer_block_id):
+    def render_block(self, layer_block_id, default_width=5):
         if layer_block_id is not None:
             layer = self.project.mapLayer(layer_block_id)
             # symbol = QgsFillSymbolLayer()
             symbol = QgsSimpleFillSymbolLayer.create({
                 'outline_color': "#C00000",
                 'color': "#FF0066",
-                'outline_width': "5",
+                'outline_width': f"{default_width}",
                 'outline_width_unit': 'Pixel'
             })
             layer.renderer().symbol().changeSymbolLayer(0, symbol)
             layer.triggerRepaint()
             self.iface.layerTreeView().refreshLayerSymbology(layer.id())
 
-    def render_poi(self, layer_poi_id):
+    def render_poi(self, layer_poi_id, default_size, default_outline_size, defalut_font_size=8):
         if layer_poi_id is not None:
             layer = self.project.mapLayer(layer_poi_id)
             fni, field_name = get_field_index_no_case(layer, default_field.name_poi_type)
@@ -325,9 +335,11 @@ class renderDialog(QtWidgets.QDialog, Ui_renderUPDialogBase):
                 if poi_type in poi_type_color_dict:
                     symbol_layer = QgsSimpleMarkerSymbolLayer.create({
                         'color': poi_type_color_dict[poi_type],
-                        'size': '4',
+                        'size': f"{default_size}",
                         'outline_color': '#ffffff',
-                        'outline_width': '1'
+                        'outline_width': f'{default_outline_size}',
+                        'outline_width_unit': "Pixel",
+                        'size_unit': "Pixel"
                         # 'outline_color': metro_line_color_dict[lineid],
                     })
 
@@ -337,21 +349,21 @@ class renderDialog(QtWidgets.QDialog, Ui_renderUPDialogBase):
             self.iface.layerTreeView().refreshLayerSymbology(layer.id())
 
             fni, field_name = get_field_index_no_case(layer, default_field.name_poi)
-            self.set_label(layer, field_name, font_size=8)
+            self.set_label(layer, field_name, font_size=defalut_font_size)
 
-    def render_metro_station(self, layer_metro_station_id):
+    def render_metro_station(self, layer_metro_station_id, default_size=15, default_label_size=12):
         if layer_metro_station_id is not None:
             layer = self.project.mapLayer(layer_metro_station_id)
             symbol = QgsSvgMarkerSymbolLayer(os.path.join(PluginDir, "icons/metro_station.svg"))
             if symbol is not None:
-                symbol.setSize(15)
-                symbol.setSizeUnit(QgsUnitTypes.RenderUnit.RenderPoints)
+                symbol.setSize(default_size)
+                symbol.setSizeUnit(QgsUnitTypes.RenderUnit.RenderPixels)
                 layer.renderer().symbol().changeSymbolLayer(0, symbol)
             layer.triggerRepaint()
             self.iface.layerTreeView().refreshLayerSymbology(layer.id())
 
             fni, field_name = get_field_index_no_case(layer, default_field.name_metro_station_name)
-            self.set_label(layer, field_name, font_size=12, has_buffer=False)
+            self.set_label(layer, field_name, font_size=default_label_size, has_buffer=False)
 
     def render_mertro_network(self, layer_metro_network_id):
         if layer_metro_network_id is not None:
