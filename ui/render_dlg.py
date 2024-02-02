@@ -40,7 +40,7 @@ from qgis._gui import QgisInterface
 from .render_dlg_style import Ui_renderUPDialogBase
 from ..utils import get_field_index_no_case, default_field, metro_line_color_dict, PluginDir, poi_type_color_dict, \
     get_qset_name, PLUGIN_NAME, check_crs, MESSAGE_TAG, get_default_font, PluginConfig, DefaultFont, default_label_size, \
-    default_diag, default_metro_station_size, default_poi_size, default_block_outline_width
+    default_diag, default_metro_station_size, default_poi_size, default_block_outline_width, default_metro_network_width
 
 log = logging.getLogger('QGIS')
 
@@ -290,7 +290,7 @@ class renderDialog(QtWidgets.QDialog, Ui_renderUPDialogBase):
         label_size = int(out_diag * default_label_size * 72 / out_resolution)
         metro_station_size = out_diag * default_metro_station_size
 
-        self.render_mertro_network(layer_metro_network_id)
+        self.render_mertro_network(layer_metro_network_id, int(out_diag * default_metro_network_width))
         self.render_metro_station(layer_metro_station_id, int(metro_station_size), int(label_size * 1.5))
         self.render_poi(layer_poi_id, int(out_diag * default_poi_size), label_size)
         self.render_block(layer_block_id, int(out_diag * default_block_outline_width))
@@ -365,7 +365,7 @@ class renderDialog(QtWidgets.QDialog, Ui_renderUPDialogBase):
             fni, field_name = get_field_index_no_case(layer, default_field.name_metro_station_name)
             self.set_label(layer, field_name, font_size=default_label_size, has_buffer=False)
 
-    def render_mertro_network(self, layer_metro_network_id):
+    def render_mertro_network(self, layer_metro_network_id, default_width):
         if layer_metro_network_id is not None:
             layer = self.project.mapLayer(layer_metro_network_id)
             fni, field_name = get_field_index_no_case(layer, default_field.name_metro_line_id)
@@ -381,8 +381,8 @@ class renderDialog(QtWidgets.QDialog, Ui_renderUPDialogBase):
                 network_type[lineid] = f"{lineid}号线"
                 symbol_layer = QgsSimpleLineSymbolLayer.create({
                     'color': metro_line_color_dict[lineid],
-                    'line_width': '6',
-                    'line_width_unit': 'Points'
+                    'line_width': f'{default_width}',
+                    'line_width_unit': 'Pixel'
                     # 'outline_color': metro_line_color_dict[lineid],
                 })
                 spec_dict[lineid] = symbol_layer
