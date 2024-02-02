@@ -44,6 +44,9 @@ import os.path
 
 # import pydevd_pycharm
 # pydevd_pycharm.settrace('localhost', port=53100, stdoutToServer=True, stderrToServer=True)
+
+task_batch_export = None  # task放到global可以防止QGIS崩溃
+
 class renderUP:
     """QGIS Plugin Implementation."""
 
@@ -370,6 +373,11 @@ class renderUP:
             os.mkdir(project_path)
 
         # QgsMessageLog.logMessage("开始1导出...", tag="Plugins", level=Qgis.MessageLevel.Warning)
-        globals()['batch_export'] = bacth_export('批量导出图片', self.iface, block_layer)
+        # globals()['batch_export'] = bacth_export('批量导出图片', self.iface, block_layer)
         # globals()['task1'] = QgsTask.fromFunction("sm1311", function=be.run, on_finished=be.completed)
-        QgsApplication.taskManager().addTask(globals()['batch_export'])
+
+        # globals()['batch_export'] = bacth_export('批量导出图片', self.iface, block_layer)
+        # QgsApplication.taskManager().addTask(globals()['batch_export'])
+        global task_batch_export
+        task_batch_export = bacth_export('批量导出图片', self.iface, block_layer)
+        QgsApplication.taskManager().addTask(task_batch_export)

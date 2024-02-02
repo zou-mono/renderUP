@@ -22,18 +22,18 @@ from ..utils import get_qset_name, get_field_index_no_case, default_field, Expor
     MESSAGE_TAG, IconDir, DefaultFont, default_scalebar_size, default_diag
 
 
-class escapeEventFilter(QtCore.QObject):
-    def __init__(self, parent=None):
-        super(escapeEventFilter, self).__init__(parent)
-
-    def eventFilter(self, obj: QtCore.QObject, event):
-        if event.type() == QEvent.KeyRelease:
-            # QMessageBox.information(None, 'MyEventFilter', f'event: {event}')
-            # QgsMessageLog.logMessage("escape key pressed", tag=MESSAGE_TAG, level=Qgis.MessageLevel.Warning)
-            if event.key() == Qt.Key_B:
-                QgsMessageLog.logMessage("escape B pressed", tag=MESSAGE_TAG, level=Qgis.MessageLevel.Warning)
-                return True
-        return False
+# class escapeEventFilter(QtCore.QObject):
+#     def __init__(self, parent=None):
+#         super(escapeEventFilter, self).__init__(parent)
+#
+#     def eventFilter(self, obj: QtCore.QObject, event):
+#         if event.type() == QEvent.KeyRelease:
+#             # QMessageBox.information(None, 'MyEventFilter', f'event: {event}')
+#             # QgsMessageLog.logMessage("escape key pressed", tag=MESSAGE_TAG, level=Qgis.MessageLevel.Warning)
+#             if event.key() == Qt.Key_B:
+#                 QgsMessageLog.logMessage("escape B pressed", tag=MESSAGE_TAG, level=Qgis.MessageLevel.Warning)
+#                 return True
+#         return False
 
 
 class bacth_export(QgsTask):
@@ -47,11 +47,6 @@ class bacth_export(QgsTask):
         iface.mapCanvas().keyPressed.connect(self.key_pressed)
         self.exception = None
 
-    def key_pressed(self, event):
-        if event.key() == Qt.Key_Escape:
-            self.cancel()
-
-    def run(self):
         self.config = PluginConfig(
             key=self.qset.value(get_qset_name("key")),
             random_enabled=True,
@@ -71,6 +66,11 @@ class bacth_export(QgsTask):
             radius=self.qset.value(get_qset_name("radius"), type=float)
         )
 
+    def key_pressed(self, event):
+        if event.key() == Qt.Key_Escape:
+            self.cancel()
+
+    def run(self):
         out_width = self.config.out_width
         out_height = self.config.out_height
         out_resolution = self.config.out_resolution
@@ -114,12 +114,11 @@ class bacth_export(QgsTask):
 
             # lyrs_exist = [l for l in QgsProject().instance().layerTreeRoot().children() if l.isVisible()]
 
-            proj_id = self.project.crs().authid()
+            # proj_id = self.project.crs().authid()
             if self.project.crs().isGeographic():
                 self.project.setCrs(QgsCoordinateReferenceSystem("EPSG:3857"))
 
             bTransfer = False
-            geom_tr = None
             if self.block_layer.crs().isValid():
                 if self.block_layer.crs().authid() != "EPSG:3857":
                     sourceCrs = QgsCoordinateReferenceSystem(f"EPSG:{epsg_code(self.block_layer.crs())}")
